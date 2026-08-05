@@ -13,6 +13,7 @@ export function ensureAgentActivityListener(
 ): void {
   onExited = exited;
   if (bound || typeof window === "undefined") return;
+  if (!("__TAURI_INTERNALS__" in window)) return;
   bound = true;
   void listen<AgentSignal>("novaterm:agent-signal", (e) => {
     if (e.payload.kind === "started") {
