@@ -37,9 +37,13 @@ export function LocalAgentNotificationsBridge() {
   const prev = useRef<RunStatus>(status);
 
   useEffect(() => {
-    useAgentStore.getState().setLocalAgent(
-      liveStatus(status) ? { agent: AGENT, status: liveStatus(status)! } : null,
-    );
+    useAgentStore
+      .getState()
+      .setLocalAgent(
+        liveStatus(status)
+          ? { agent: AGENT, status: liveStatus(status)! }
+          : null,
+      );
 
     const was = prev.current;
     prev.current = status;
@@ -63,7 +67,11 @@ export function LocalAgentNotificationsBridge() {
       });
 
     if (status === "awaiting-approval") {
-      fire("attention", "NovaTerm needs your approval", "Approve a tool to continue");
+      fire(
+        "attention",
+        "NovaTerm needs your approval",
+        "Approve a tool to continue",
+      );
     } else if (status === "error") {
       fire("error", "NovaTerm run failed", error ?? undefined);
     } else if (status === "idle" && isBusy(was)) {

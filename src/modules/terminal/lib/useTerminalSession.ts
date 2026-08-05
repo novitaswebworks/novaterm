@@ -327,7 +327,11 @@ async function leafHasForegroundJob(leafId: number): Promise<boolean> {
   try {
     return await invoke<boolean>("pty_has_foreground_job", { id: s.pty.id });
   } catch (e) {
-    console.error("[novaterm] pty_has_foreground_job failed for leaf", leafId, e);
+    console.error(
+      "[novaterm] pty_has_foreground_job failed for leaf",
+      leafId,
+      e,
+    );
     return false;
   }
 }

@@ -15,16 +15,19 @@ import { useUpdater } from "./useUpdater";
 export function UpdaterDialog() {
   const { status, dismiss } = useUpdater();
 
-  const open =
-    status.kind === "manual-available" ||
-    status.kind === "error";
+  const open = status.kind === "manual-available" || status.kind === "error";
 
   if (!open) return null;
 
   const manual = status.kind === "manual-available" ? status.info : null;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) dismiss(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) dismiss();
+      }}
+    >
       <DialogContent className="sm:max-w-[440px] glass-panel glow-hover">
         <DialogHeader>
           <DialogTitle>
@@ -35,7 +38,9 @@ export function UpdaterDialog() {
           <DialogDescription>
             {manual
               ? `You are currently on v${manual.currentVersion}. Click below to view the release and download the latest installer.`
-              : status.kind === "error" ? status.message : ""}
+              : status.kind === "error"
+                ? status.message
+                : ""}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

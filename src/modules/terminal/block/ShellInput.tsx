@@ -67,12 +67,16 @@ export default function ShellInput({
   const fontFamilyPref = usePreferencesStore((p) => p.terminalFontFamily);
   const fontSize = usePreferencesStore((p) => p.terminalFontSize);
   const autocompleteEnabled = usePreferencesStore((p) => p.autocompleteEnabled);
-  const autocompleteProvider = usePreferencesStore((p) => p.autocompleteProvider);
+  const autocompleteProvider = usePreferencesStore(
+    (p) => p.autocompleteProvider,
+  );
   const autocompleteModelId = usePreferencesStore((p) => p.autocompleteModelId);
   const lmstudioBaseURL = usePreferencesStore((p) => p.lmstudioBaseURL);
   const mlxBaseURL = usePreferencesStore((p) => p.mlxBaseURL);
   const ollamaBaseURL = usePreferencesStore((p) => p.ollamaBaseURL);
-  const openaiCompatibleBaseURL = usePreferencesStore((p) => p.openaiCompatibleBaseURL);
+  const openaiCompatibleBaseURL = usePreferencesStore(
+    (p) => p.openaiCompatibleBaseURL,
+  );
   const fontFamily = resolveFontFamily(fontFamilyPref);
   const fontRef = useRef({ fontFamily, fontSize });
   fontRef.current = { fontFamily, fontSize };
@@ -108,14 +112,14 @@ export default function ShellInput({
           if (ac.signal.aborted) return null;
 
           const apiKey = await getKey(autocompleteProvider);
-          const deps = { 
+          const deps = {
             provider: autocompleteProvider,
             modelId: autocompleteModelId,
             lmstudioBaseURL,
             mlxBaseURL,
             ollamaBaseURL,
             openaiCompatibleBaseURL,
-            apiKey
+            apiKey,
           };
 
           const req = {

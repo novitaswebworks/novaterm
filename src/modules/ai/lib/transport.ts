@@ -9,7 +9,9 @@ const NOVATERM_MD_MAX_BYTES = 32 * 1024;
 type MemoryCacheEntry = { content: string | null; mtime: number };
 const projectMemoryCache = new Map<string, MemoryCacheEntry>();
 
-async function readNovaTermMd(workspaceRoot: string | null): Promise<string | null> {
+async function readNovaTermMd(
+  workspaceRoot: string | null,
+): Promise<string | null> {
   if (!workspaceRoot) return null;
   const path = `${workspaceRoot.replace(/\/$/, "")}/NOVATERM.md`;
   const cached = projectMemoryCache.get(workspaceRoot);
@@ -17,7 +19,10 @@ async function readNovaTermMd(workspaceRoot: string | null): Promise<string | nu
   try {
     const r = await native.readFile(path);
     if (r.kind !== "text") {
-      projectMemoryCache.set(workspaceRoot, { content: null, mtime: Date.now() });
+      projectMemoryCache.set(workspaceRoot, {
+        content: null,
+        mtime: Date.now(),
+      });
       return null;
     }
     const content =

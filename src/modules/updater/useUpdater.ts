@@ -1,6 +1,5 @@
 import { getVersion } from "@tauri-apps/api/app";
 
-
 import { useCallback, useEffect, useState } from "react";
 
 const LAST_CHECK_KEY = "novaterm:updater:last-check";
@@ -19,7 +18,6 @@ export type UpdaterStatus =
   | { kind: "idle" }
   | { kind: "checking" }
   | { kind: "uptodate" }
-
   | { kind: "manual-available"; info: ManualUpdateInfo }
   | { kind: "downloading"; downloaded: number; contentLength: number | null }
   | { kind: "ready" }

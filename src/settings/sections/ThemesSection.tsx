@@ -27,7 +27,10 @@ import {
   deleteBgImage,
   importBgImageFromFile,
 } from "@/modules/theme/bgImageStore";
-import { deleteCustomTheme, saveCustomTheme } from "@/modules/theme/customThemes";
+import {
+  deleteCustomTheme,
+  saveCustomTheme,
+} from "@/modules/theme/customThemes";
 import { listBuiltinThemes } from "@/modules/theme/themes";
 import { validateTheme } from "@/modules/theme/validateTheme";
 import { deleteThemeFile, emitThemeEdit } from "@/modules/theme/themeFiles";
@@ -248,7 +251,11 @@ export function ThemesSection() {
                         onEditTheme(t.id);
                       }}
                     >
-                      <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={1.75} />
+                      <HugeiconsIcon
+                        icon={Edit02Icon}
+                        size={12}
+                        strokeWidth={1.75}
+                      />
                     </span>
                     <span
                       role="button"

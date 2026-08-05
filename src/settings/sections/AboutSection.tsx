@@ -36,9 +36,10 @@ export function AboutSection() {
           : status.kind === "manual-available"
             ? `Download v${status.info.version}`
             : "Check for updates";
-  
+
   const onUpdateClick = () => {
-    if (status.kind === "manual-available") void openUrl(status.info.releaseUrl);
+    if (status.kind === "manual-available")
+      void openUrl(status.info.releaseUrl);
     else void check({ manual: true });
   };
 
@@ -112,11 +113,7 @@ export function AboutSection() {
 
       <div className="flex flex-col gap-1.5">
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            onClick={onUpdateClick}
-            disabled={checking}
-          >
+          <Button size="sm" onClick={onUpdateClick} disabled={checking}>
             {checkLabel}
           </Button>
           <Button
