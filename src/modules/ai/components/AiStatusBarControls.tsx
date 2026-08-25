@@ -246,7 +246,7 @@ function ModelDropdown() {
     }
     return { configured, unconfigured };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKeys]);
+  }, [hasKeyFor]);
 
   const allModels = useMemo(() => [...MODELS, ...epModelInfos], [epModelInfos]);
 

@@ -154,7 +154,7 @@ export default function ShellInput({
       handle.destroy();
       handleRef.current = null;
     };
-  }, []);
+  }, [openaiCompatibleBaseURL, mlxBaseURL, autocompleteModelId, ollamaBaseURL, lmstudioBaseURL, autocompleteProvider, autocompleteEnabled]);
 
   // Retarget the single editor to the active leaf: register its focus callback
   // and swap drafts so each leaf keeps its own unsent command. New or switched

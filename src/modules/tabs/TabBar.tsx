@@ -128,7 +128,7 @@ export function TabBar({
 
   useLayoutEffect(() => {
     measurePill();
-  }, [measurePill, activeId, tabs]);
+  }, [measurePill]);
 
   useEffect(() => {
     const list = listRef.current;

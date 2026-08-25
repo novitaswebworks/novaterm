@@ -220,7 +220,7 @@ export function GitHistoryPane({
   } | null>(null);
   const [remoteWeb, setRemoteWeb] = useState<RemoteWebInfo | null>(null);
   const filesCacheRef = useRef(new Map<string, FilesEntry>());
-  const [filesTick, setFilesTick] = useState(0);
+  const [_filesTick, setFilesTick] = useState(0);
   const bumpFiles = useCallback(() => setFilesTick((n) => n + 1), []);
 
   const requestIdRef = useRef(0);
@@ -447,7 +447,7 @@ export function GitHistoryPane({
         filesInflightRef.current.delete(sha);
       }
     },
-    [repoRoot],
+    [repoRoot, bumpFiles],
   );
 
   const handleRowClick = useCallback(
@@ -479,7 +479,7 @@ export function GitHistoryPane({
   const openFilesEntry = useMemo(() => {
     if (!openAnchor) return null;
     return filesCacheRef.current.get(openAnchor.sha) ?? null;
-  }, [openAnchor, filesTick]);
+  }, [openAnchor]);
 
   const handleFileOpen = useCallback(
     (commit: GitLogEntry, file: GitCommitFileChange) => {

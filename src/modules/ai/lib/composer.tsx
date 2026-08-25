@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useWhisperRecording } from "../hooks/useWhisperRecording";
 import { expandSnippetTokens, type Snippet } from "../lib/snippets";
 import { tryRunSlashCommand, type SlashCommandMeta } from "./slashCommands";
@@ -97,24 +97,7 @@ export function AiComposerProvider({ children }: ProviderProps) {
       requestAnimationFrame(() => textareaRef.current?.focus());
     }
     prevIsBusyRef.current = isBusy;
-  }, [isBusy, textareaRef]);
-
-  // Listen for explorer's "Attach to Agent" event.
-  useEffect(() => {
-    const onAttach = (e: Event) => {
-      const path = (e as CustomEvent<string>).detail;
-      if (typeof path === "string" && path.length > 0) {
-        void attachFileByPath(path);
-      }
-    };
-    window.addEventListener("novaterm:ai-attach-file", onAttach);
-
-    return () => {
-      window.removeEventListener("novaterm:ai-attach-file", onAttach);
-    };
-    // attachFileByPath is stable for our purposes (closes over setFiles only)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isBusy]);
 
   useEffect(() => {
     if (pendingSelections.length === 0) return;
@@ -174,7 +157,7 @@ export function AiComposerProvider({ children }: ProviderProps) {
   const removeCommand = (name: string) =>
     setPickedCommands((prev) => prev.filter((c) => c.name !== name));
 
-  const attachFileByPath = async (path: string) => {
+  const attachFileByPath = useCallback(async (path: string) => {
     try {
       type ReadResult =
         | { kind: "text"; content: string; size: number }
@@ -208,7 +191,22 @@ export function AiComposerProvider({ children }: ProviderProps) {
     } catch (e) {
       console.error("attachFileByPath failed:", e);
     }
-  };
+  }, []);
+
+  // Listen for explorer's "Attach to Agent" event.
+  useEffect(() => {
+    const onAttach = (e: Event) => {
+      const path = (e as CustomEvent<string>).detail;
+      if (typeof path === "string" && path.length > 0) {
+        void attachFileByPath(path);
+      }
+    };
+    window.addEventListener("novaterm:ai-attach-file", onAttach);
+
+    return () => {
+      window.removeEventListener("novaterm:ai-attach-file", onAttach);
+    };
+  }, [attachFileByPath]);
 
   const submit = () => {
     if (isBusy) return;

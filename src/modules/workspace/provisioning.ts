@@ -45,7 +45,7 @@ export function useWorkspaceProvisioning(
               }
               
               if (hasTasks) {
-                const prompt = `Please set up my workspace by executing the following tasks:\n\n${config.tasks!.map(t => `- **${t.name}**: \`${t.command}\``).join('\n')}\n\nYou can use the shell_bg_spawn or run_command tools to start these.`;
+                const prompt = `Please set up my workspace by executing the following tasks:\n\n${config.tasks?.map(t => `- **${t.name}**: \`${t.command}\``).join('\n')}\n\nYou can use the shell_bg_spawn or run_command tools to start these.`;
                 useChatStore.getState().focusInput(prompt);
               }
             }
@@ -58,7 +58,7 @@ export function useWorkspaceProvisioning(
           },
           duration: 10000,
         });
-      } catch (e) {
+      } catch (_e) {
       }
     };
     void check();

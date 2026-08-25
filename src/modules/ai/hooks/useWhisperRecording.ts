@@ -122,14 +122,14 @@ export function useWhisperRecording({
       teardownStream();
       setState("idle");
     }
-  }, [apiKeys, sttProvider, sttOptions, onResult, state, supported, hasKey]);
+  }, [apiKeys, sttProvider, sttOptions, onResult, state, supported, hasKey, teardownStream]);
 
   useEffect(() => {
     return () => {
       recRef.current?.stop();
       teardownStream();
     };
-  }, []);
+  }, [teardownStream]);
 
   return {
     state,

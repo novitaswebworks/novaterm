@@ -42,7 +42,7 @@ export function useExplorerDnd({ rootPath, isDir, onMove }: Options) {
   const ghostRef = useCallback((el: HTMLDivElement | null) => {
     ghostElRef.current = el;
     if (el) placeGhost(lastPosRef.current.x, lastPosRef.current.y);
-  }, []);
+  }, [placeGhost]);
 
   const onPointerDown = useCallback((e: ReactPointerEvent) => {
     if (e.button !== 0) return;
@@ -102,7 +102,7 @@ export function useExplorerDnd({ rootPath, isDir, onMove }: Options) {
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", cancel);
     cleanupRef.current = detach;
-  }, []);
+  }, [placeGhost]);
 
   const onClickCapture = useCallback((e: React.MouseEvent) => {
     if (suppressClickRef.current) {
