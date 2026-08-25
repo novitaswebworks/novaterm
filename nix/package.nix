@@ -69,7 +69,7 @@ stdenv.mkDerivation {
 
   meta = with lib; {
     description = "Open-source lightweight cross-platform AI-native terminal (ADE)";
-    homepage = "https://novaterm.app";
+    homepage = "https://novaterm.novitasweb.works";
     license = licenses.asl20;
     platforms = [ "x86_64-linux" "x86_64-darwin" "aarch64-darwin" ];
   };

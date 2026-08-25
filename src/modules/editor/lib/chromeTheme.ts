@@ -268,6 +268,64 @@ const chrome = EditorView.theme({
     border: "2px solid transparent",
   },
   ".cm-tooltip ::-webkit-scrollbar-track": { background: "transparent" },
+
+  ".cm-panel.cm-search": {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+    padding: "8px 12px",
+    backgroundColor: "var(--popover)",
+    borderTop: "1px solid var(--border)",
+    color: "var(--foreground)",
+    fontSize: "12px",
+    fontFamily: "inherit",
+    alignItems: "center",
+  },
+  ".cm-panel.cm-search input.cm-textfield": {
+    fontFamily: detectMonoFontFamily(),
+    fontSize: "12px",
+    backgroundColor: "color-mix(in srgb, var(--muted) 50%, transparent)",
+    color: "var(--foreground)",
+    border: "1px solid var(--border)",
+    borderRadius: "6px",
+    padding: "4px 8px",
+    outline: "none",
+    marginRight: "4px",
+  },
+  ".cm-panel.cm-search input.cm-textfield:focus": {
+    borderColor: "var(--ring)",
+  },
+  ".cm-panel.cm-search button.cm-button": {
+    backgroundColor: "color-mix(in srgb, var(--muted) 50%, transparent)",
+    color: "var(--foreground)",
+    border: "1px solid var(--border)",
+    borderRadius: "6px",
+    padding: "4px 8px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "500",
+    backgroundImage: "none",
+    textTransform: "none",
+  },
+  ".cm-panel.cm-search button.cm-button:hover": {
+    backgroundColor: "color-mix(in srgb, var(--muted) 80%, black 20%)",
+  },
+  ".cm-panel.cm-search button[name='close']": {
+    marginLeft: "auto",
+    padding: "4px 6px",
+  },
+  ".cm-panel.cm-search label": {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    cursor: "pointer",
+    userSelect: "none",
+    marginLeft: "4px",
+  },
+  ".cm-panel.cm-search input[type='checkbox']": {
+    margin: "0",
+    accentColor: "var(--primary)",
+  }
 });
 
 export function chromeTheme(): Extension {
