@@ -91,7 +91,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "TAURI_SIGNING_PUBLIC_KEY_PLACEHOLDER",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdFN0UzMzRBRkQ1M0M1MzIKUldReXhWUDlTak4rZnQzQ1A1Y0hoSVdlejJHUXpRNGZCVi93TnZhWjR6MzlQQmkwZVI4RkNLRXcK",
       "endpoints": [
         "https://github.com/novitaswebworks/novaterm/releases/latest/download/latest.json"
       ],
