@@ -73,3 +73,48 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.platform == 'macos-latest' && '--target universal-apple-darwin' || '' }}
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # After ALL platform builds succeed, ping the website repo so it can
+  # auto-update the VERSION, download links, and changelog.
+  # Requires a secret: WEBSITE_DEPLOY_TOKEN
+  #   → a GitHub Personal Access Token (classic) with "repo" scope scoped
+  #     to the novaterm-website repo, stored as a secret in THIS repo.
+  # ─────────────────────────────────────────────────────────────────────────
+  notify-website:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract version
+        id: meta
+        run: |
+          VERSION="${{ github.ref_name }}"
+          echo "VERSION=${VERSION#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch release notes from GitHub API
+        id: notes
+        run: |
+          NOTES=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" \
+            | jq -r '.body // ""')
+          echo "NOTES<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTES"    >> "$GITHUB_OUTPUT"
+          echo "EOF"       >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch app-released to website repo
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.WEBSITE_DEPLOY_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/novitaswebworks/novaterm-website/dispatches" \
+            --data '{
+              "event_type": "app-released",
+              "client_payload": {
+                "version": "${{ steps.meta.outputs.VERSION }}",
+                "notes": ${{ toJSON(steps.notes.outputs.NOTES) }}
+              }
+            }'
+          echo "Done - dispatched app-released v${{ steps.meta.outputs.VERSION }} to website"
