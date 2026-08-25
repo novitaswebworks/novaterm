@@ -118,3 +118,18 @@ jobs:
               }
             }'
           echo "Done - dispatched app-released v${{ steps.meta.outputs.VERSION }} to website"
+
+      - name: Dispatch app-released to homebrew-tap repo
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.WEBSITE_DEPLOY_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/novitaswebworks/homebrew-tap/dispatches" \
+            --data '{
+              "event_type": "app-released",
+              "client_payload": {
+                "version": "${{ steps.meta.outputs.VERSION }}"
+              }
+            }'
+          echo "Done - dispatched app-released v${{ steps.meta.outputs.VERSION }} to homebrew-tap"
