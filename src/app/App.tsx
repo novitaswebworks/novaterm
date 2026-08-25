@@ -86,7 +86,7 @@ import {
 } from "@/modules/terminal";
 import { ThemeProvider, useThemeFileEditing } from "@/modules/theme";
 import { UpdaterDialog } from "@/modules/updater";
-import { useWorkspaceEnvStore, type WorkspaceEnv } from "@/modules/workspace";
+import { useWorkspaceEnvStore, type WorkspaceEnv, useWorkspaceProvisioning } from "@/modules/workspace";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { SearchAddon } from "@xterm/addon-search";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -312,6 +312,8 @@ export default function App() {
     launchCwd ?? home,
   );
 
+  useWorkspaceProvisioning(explorerRoot, openFileTab);
+
   useWindowTitle(activeTab, explorerRoot);
 
   useEffect(() => {
@@ -461,6 +463,15 @@ export default function App() {
     },
     [hasComposer, openPanel, focusInput],
   );
+
+  
+  const requestExplanation = useCallback(() => {
+    if (!hasComposer) {
+      void openSettingsWindow("models");
+      return;
+    }
+    focusInput("/explain ");
+  }, [hasComposer, focusInput]);
 
   const askFromSelection = useCallback(() => {
     if (!hasComposer) {
@@ -682,6 +693,7 @@ export default function App() {
       "blocks.next": () => navigateFocusedBlocks(1),
       "search.focus": () => searchInlineRef.current?.focus(),
       "ai.toggle": togglePanelAndFocus,
+      "ai.explain": requestExplanation,
       "ai.askSelection": askFromSelection,
       "agent.focusAttention": () => {
         const t = nextAttentionTarget();
@@ -713,6 +725,7 @@ export default function App() {
       focusNextPaneInTab,
       toggleSourceControl,
       togglePanelAndFocus,
+      requestExplanation,
       askFromSelection,
       toggleSidebar,
       toggleExplorerFocus,
@@ -728,6 +741,7 @@ export default function App() {
       if (id === "editor.undo" || id === "editor.redo") {
         return activeTab?.kind !== "editor";
       }
+      if (id === "ai.explain") { return false; }
       if (id === "ai.askSelection") {
         const target =
           (e.target as HTMLElement | null) ?? document.activeElement;
@@ -1026,6 +1040,7 @@ export default function App() {
       splitActivePaneInActiveTab,
       toggleSidebar,
       togglePanelAndFocus,
+      requestExplanation,
       askFromSelection,
       activeSpaceId,
       handleNewSpace,

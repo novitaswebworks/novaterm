@@ -121,6 +121,7 @@ export type Preferences = {
   defaultModelId: ModelId;
   editorTheme: EditorThemePref;
   customInstructions: string;
+  customEnvVars: Record<string, string>;
   autostart: boolean;
   restoreWindowState: boolean;
   autocompleteEnabled: boolean;
@@ -188,6 +189,7 @@ const KEY_BG_BLUR = "backgroundBlur";
 const KEY_DEFAULT_MODEL = "defaultModelId";
 const KEY_EDITOR_THEME = "editorTheme";
 const KEY_CUSTOM_INSTRUCTIONS = "customInstructions";
+const KEY_CUSTOM_ENV_VARS = "customEnvVars";
 const KEY_AUTOSTART = "autostart";
 const KEY_RESTORE_WINDOW = "restoreWindowState";
 const KEY_AUTOCOMPLETE_ENABLED = "autocompleteEnabled";
@@ -258,6 +260,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   defaultModelId: DEFAULT_MODEL_ID,
   editorTheme: EDITOR_THEME_AUTO,
   customInstructions: "",
+  customEnvVars: {},
   autostart: false,
   restoreWindowState: true,
   autocompleteEnabled: false,
@@ -352,6 +355,7 @@ export async function loadPreferences(): Promise<Preferences> {
     customInstructions:
       get<string>(KEY_CUSTOM_INSTRUCTIONS) ??
       DEFAULT_PREFERENCES.customInstructions,
+    customEnvVars: get<Record<string, string>>(KEY_CUSTOM_ENV_VARS) ?? DEFAULT_PREFERENCES.customEnvVars,
     autostart: get<boolean>(KEY_AUTOSTART) ?? DEFAULT_PREFERENCES.autostart,
     restoreWindowState:
       get<boolean>(KEY_RESTORE_WINDOW) ??
@@ -771,6 +775,7 @@ export async function onPreferencesChange(
     [KEY_DEFAULT_MODEL]: "defaultModelId",
     [KEY_EDITOR_THEME]: "editorTheme",
     [KEY_CUSTOM_INSTRUCTIONS]: "customInstructions",
+    [KEY_CUSTOM_ENV_VARS]: "customEnvVars",
     [KEY_AUTOSTART]: "autostart",
     [KEY_RESTORE_WINDOW]: "restoreWindowState",
     [KEY_AUTOCOMPLETE_ENABLED]: "autocompleteEnabled",
@@ -844,4 +849,8 @@ export async function emitKeysChanged(): Promise<void> {
 
 export function onKeysChanged(cb: () => void): Promise<UnlistenFn> {
   return listen(KEYS_CHANGED_EVENT, () => cb());
+}
+
+export async function setCustomEnvVars(value: Record<string, string>): Promise<void> {
+  await writePref(KEY_CUSTOM_ENV_VARS, value);
 }

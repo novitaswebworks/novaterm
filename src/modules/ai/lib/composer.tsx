@@ -108,8 +108,10 @@ export function AiComposerProvider({ children }: ProviderProps) {
       }
     };
     window.addEventListener("novaterm:ai-attach-file", onAttach);
-    return () =>
+
+    return () => {
       window.removeEventListener("novaterm:ai-attach-file", onAttach);
+    };
     // attachFileByPath is stable for our purposes (closes over setFiles only)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

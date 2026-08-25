@@ -108,6 +108,7 @@ pub fn spawn(
     workspace: WorkspaceEnv,
     blocks: bool,
     shell: Option<String>,
+    env: Option<std::collections::HashMap<String, String>>,
     on_data: Channel<Response>,
     on_exit: Channel<i32>,
 ) -> Result<(Arc<Session>, PtySize), String> {
@@ -123,7 +124,12 @@ pub fn spawn(
     };
     let pair = pty_system.openpty(size).map_err(|e| e.to_string())?;
 
-    let cmd = shell_init::build_command(cwd, workspace, blocks, shell)?;
+    let mut cmd = shell_init::build_command(cwd, workspace, blocks, shell)?;
+    if let Some(e) = env {
+        for (k, v) in e {
+            cmd.env(k, v);
+        }
+    }
     let mut child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
     drop(pair.slave);
 

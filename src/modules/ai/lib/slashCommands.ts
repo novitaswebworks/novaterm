@@ -31,6 +31,13 @@ You are the orchestrator, not the implementer. Do not write the code yourself.
 Sharpen vague requests into precise engineering instructions; keep each agent prompt focused on one coherent unit of work.`;
 }
 
+
+function explainCommandPrompt(cmd: string): string {
+  return `Please explain the following terminal command in simple terms, breaking down each part (flags, arguments, pipes, etc.):\n\n\`\`\`\n${cmd}\n\`\`\``;
+}
+
+const EXPLAIN_LATEST_PROMPT = `Please look at my active terminal context and explain the last command I ran, or the last error that occurred. Break it down in simple terms.`;
+
 const INIT_PROMPT = `Scan this workspace and produce NOVATERM.md at the workspace root with:
 
 - One-paragraph project description.
@@ -53,6 +60,13 @@ export const SLASH_COMMANDS: Record<string, SlashCommandMeta> = {
     name: "init",
     invocation: "/init",
     label: "Initialize workspace",
+    icon: SparklesIcon,
+  },
+  
+  explain: {
+    name: "explain",
+    invocation: "/explain",
+    label: "Explain command or error",
     icon: SparklesIcon,
   },
   plan: {
@@ -96,6 +110,21 @@ export function tryRunSlashCommand(input: string): SlashOutcome {
       return {
         kind: "handled",
         toast: nowActive ? "Plan mode on" : "Plan mode off",
+      };
+    }
+    
+    case "explain": {
+      if (tail) {
+        return {
+          kind: "send-prompt",
+          prompt: explainCommandPrompt(tail),
+          commandName: "explain",
+        };
+      }
+      return {
+        kind: "send-prompt",
+        prompt: EXPLAIN_LATEST_PROMPT,
+        commandName: "explain",
       };
     }
     case "init": {

@@ -36,6 +36,7 @@ export type ShortcutId =
   | "view.zoomReset"
   | "view.zenMode"
   | "ai.toggle"
+  | "ai.explain"
   | "ai.askSelection"
   | "agent.focusAttention"
   | "settings.open"
@@ -234,6 +235,12 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Find in terminal",
     group: "Search",
     defaultBindings: [{ [MOD_PROP]: true, key: "f" }],
+  },
+  {
+    id: "ai.explain",
+    label: "Tutor Mode: Explain Command",
+    group: "AI",
+    defaultBindings: [{ [MOD_PROP]: true, shift: true, key: "l" }],
   },
   {
     id: "ai.toggle",

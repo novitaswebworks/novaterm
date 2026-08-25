@@ -6,5 +6,15 @@
 	<string>A program running within NovaTerm would like to use the camera.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>A program running within NovaTerm would like to use your microphone.</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>NovaTerm requires access to your Desktop to list and edit files.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>NovaTerm requires access to your Documents to list and edit files.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>NovaTerm requires access to your Downloads to list and edit files.</string>
+	<key>NSNetworkVolumesUsageDescription</key>
+	<string>NovaTerm requires access to network volumes for remote workspaces.</string>
+	<key>NSRemovableVolumesUsageDescription</key>
+	<string>NovaTerm requires access to removable volumes to manage external files.</string>
 </dict>
 </plist>

@@ -1,3 +1,4 @@
+import { useChatStore } from "@/modules/ai/store/chatStore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -897,6 +898,17 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                   </TooltipContent>
                 </Tooltip>
               </div>
+
+              <Button
+                size="xs"
+                variant="outline"
+                className="w-full h-7 mt-0.5 flex items-center justify-center gap-1.5 text-[11.5px] font-medium border-primary/20 text-primary hover:bg-primary/10 transition-colors"
+                onClick={() => {
+                  useChatStore.getState().focusInput("Analyze my current unpushed commits and staged changes. Generate a professional Pull Request title and description, and then use the shell_bg_spawn tool to execute `gh pr create --title \"...\" --body \"...\"` to publish it instantly.");
+                }}
+              >
+                <span>✨</span> AI Pull Request
+              </Button>
 
               <CommitFeedback feedback={footerFeedback} />
             </div>

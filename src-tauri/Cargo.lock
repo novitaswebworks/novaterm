@@ -2815,7 +2815,7 @@ dependencies = [
 
 [[package]]
 name = "novaterm"
-version = "1.1.4"
+version = "1.2.0"
 dependencies = [
  "bytes",
  "dirs 6.0.0",

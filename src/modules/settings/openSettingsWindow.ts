@@ -6,7 +6,8 @@ export type SettingsTab =
   | "shortcuts"
   | "models"
   | "agents"
-  | "about";
+  | "about"
+  | "vault";
 
 export async function openSettingsWindow(tab?: SettingsTab): Promise<void> {
   await invoke("open_settings_window", { tab: tab ?? null });

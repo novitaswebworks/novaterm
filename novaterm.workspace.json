@@ -1,0 +1,16 @@
+{
+  "tasks": [
+    {
+      "name": "Run Dev Server",
+      "command": "pnpm tauri dev"
+    },
+    {
+      "name": "Check Types",
+      "command": "pnpm check-types"
+    }
+  ],
+  "openFiles": [
+    "README.md",
+    "NOVATERM.md"
+  ]
+}

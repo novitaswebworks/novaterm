@@ -1,4 +1,3 @@
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WindowControls } from "@/components/WindowControls";
 import { IS_MAC, USE_CUSTOM_WINDOW_CONTROLS } from "@/lib/platform";
 import type { SettingsTab } from "@/modules/settings/openSettingsWindow";
@@ -15,6 +14,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { type JSX, useEffect, useState } from "react";
 import { AboutSection } from "./sections/AboutSection";
+import { VaultSection } from "./sections/VaultSection";
 import { AgentsSection } from "./sections/AgentsSection";
 import { GeneralSection } from "./sections/GeneralSection";
 import { ModelsSection } from "./sections/ModelsSection";
@@ -46,6 +46,7 @@ const TABS: {
     component: ShortcutsSection,
   },
   { id: "models", label: "Models", icon: AiScanIcon, component: ModelsSection },
+  { id: "vault", label: "Vault", icon: InformationCircleIcon, component: VaultSection },
   {
     id: "agents",
     label: "Agents",
@@ -107,42 +108,45 @@ export function SettingsApp() {
     };
   }, []);
 
-  return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background/50 text-foreground select-none">
-      <header
-        data-tauri-drag-region
-        className={`flex h-11 shrink-0 items-center border-b border-border/60 bg-card/60 ${
-          IS_MAC ? "pr-3 pl-22" : "pr-0 pl-3"
+    return (
+    <div className="flex h-screen flex-row overflow-hidden bg-background/30 text-foreground select-none backdrop-blur-3xl">
+      <div 
+        className={`w-52 shrink-0 border-r border-white/5 bg-background/20 flex flex-col backdrop-blur-2xl ${
+          IS_MAC ? "pt-12" : "pt-4"
         }`}
+        data-tauri-drag-region
       >
-        <Tabs
-          value={active}
-          onValueChange={(v) => setActive(v as SettingsTab)}
-          orientation="horizontal"
-          className="flex-1 items-center"
-          data-tauri-drag-region
-        >
-          <TabsList className="mx-auto h-7 bg-muted/40 px-2">
-            {TABS.map((t) => (
-              <TabsTrigger
-                key={t.id}
-                value={t.id}
-                className="h-6 gap-1.5 px-2.5 text-[11.5px]"
-              >
-                <HugeiconsIcon icon={t.icon} size={12} strokeWidth={1.75} />
-                <span>{t.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        {USE_CUSTOM_WINDOW_CONTROLS && <WindowControls closeOnly />}
-      </header>
+        <div className="px-4 pb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Settings</div>
+        <nav className="flex-1 space-y-1 px-2" data-tauri-drag-region>
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActive(t.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ease-out ${
+                active === t.id 
+                  ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20" 
+                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              }`}
+            >
+              <HugeiconsIcon icon={t.icon} size={16} strokeWidth={1.5} />
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
 
-      <main className="min-h-0 flex-1 overflow-y-auto px-8 pt-6 pb-7 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="mx-auto w-full max-w-160">
-          {ActiveSection && <ActiveSection />}
-        </div>
-      </main>
+      <div className="flex-1 flex flex-col min-w-0 bg-background/60 shadow-inner">
+        <header data-tauri-drag-region className="h-12 shrink-0 flex items-center justify-between px-6 border-b border-border/40">
+          <h1 className="text-sm font-semibold tracking-wide text-foreground/80">{TABS.find(t => t.id === active)?.label}</h1>
+          {USE_CUSTOM_WINDOW_CONTROLS && <WindowControls closeOnly />}
+        </header>
+
+        <main className="flex-1 overflow-y-auto px-10 pt-10 pb-16 [scrollbar-width:thin] [scrollbar-color:var(--border)_transparent]">
+          <div className="mx-auto w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {ActiveSection && <ActiveSection />}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

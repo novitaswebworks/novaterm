@@ -33,6 +33,40 @@ fn parse_launch_dir() -> Option<String> {
 }
 
 #[tauri::command]
+async fn aws_sync_secret(secret_id: String, profile: Option<String>, region: Option<String>) -> Result<String, String> {
+    let mut cmd = std::process::Command::new("aws");
+    cmd.arg("secretsmanager")
+       .arg("get-secret-value")
+       .arg("--secret-id")
+       .arg(&secret_id)
+       .arg("--query")
+       .arg("SecretString")
+       .arg("--output")
+       .arg("text");
+    
+    if let Some(p) = profile {
+        if !p.is_empty() {
+            cmd.arg("--profile").arg(p);
+        }
+    }
+    if let Some(r) = region {
+        if !r.is_empty() {
+            cmd.arg("--region").arg(r);
+        }
+    }
+    
+    // Attempt to run the AWS CLI
+    let output = cmd.output().map_err(|e| format!("Failed to run AWS CLI: {}. Is it installed?", e))?;
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr).to_string();
+        return Err(err);
+    }
+    
+    let json_str = String::from_utf8_lossy(&output.stdout).to_string();
+    Ok(json_str)
+}
+
+#[tauri::command]
 async fn open_settings_window(app: tauri::AppHandle, tab: Option<String>) -> Result<(), String> {
     let url_path = match tab.as_deref() {
         Some(t) if !t.is_empty() => format!("settings.html?tab={}", t),
@@ -156,7 +190,7 @@ pub fn run() {
         .setup(|_app| {
             #[cfg(target_os = "macos")]
             if let Some(main) = _app.get_webview_window("main") {
-                let _ = window_vibrancy::apply_vibrancy(&main, window_vibrancy::NSVisualEffectMaterial::HudWindow, None, None);
+                let _ = window_vibrancy::apply_vibrancy(&main, window_vibrancy::NSVisualEffectMaterial::UnderWindowBackground, None, None);
             }
             #[cfg(target_os = "windows")]
             if let Some(main) = _app.get_webview_window("main") {
@@ -264,6 +298,7 @@ pub fn run() {
             workspace::workspace_authorize,
             workspace::workspace_current_dir,
             get_launch_dir,
+            aws_sync_secret,
             open_settings_window,
             agent::agent_enable_hooks,
             agent::agent_hooks_status,

@@ -530,6 +530,7 @@ async function openPtyForSession(
 ): Promise<PtySession> {
   const startCols = s.cols > 0 ? s.cols : 80;
   const startRows = s.rows > 0 ? s.rows : 24;
+  const env = usePreferencesStore.getState().customEnvVars;
   const pty = await openPty(
     startCols,
     startRows,
@@ -550,6 +551,7 @@ async function openPtyForSession(
     cwd,
     s.blocks,
     usePreferencesStore.getState().terminalShell || undefined,
+    env
   );
   // Only resize if the bound dims changed during the spawn: a same-size
   // ResizePseudoConsole during conhost warmup is a known ConPTY trigger for
