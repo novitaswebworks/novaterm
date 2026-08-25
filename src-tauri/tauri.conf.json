@@ -39,7 +39,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "createUpdaterArtifacts": false,
+    "createUpdaterArtifacts": true,
     "copyright": "Copyright 2026 Novitas WebWorks",
     "license": "Apache-2.0",
     "publisher": "Novitas WebWorks",
@@ -88,5 +88,17 @@
     },
     "shortDescription": "AI-native terminal emulator",
     "longDescription": "NovaTerm \u2014 an open-source AI-native terminal emulator with multi-tab, file explorer, code editor, web preview, voice input, and AI agents."
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "TAURI_SIGNING_PUBLIC_KEY_PLACEHOLDER",
+      "endpoints": [
+        "https://github.com/novitaswebworks/novaterm/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }
