@@ -4,8 +4,8 @@
   <p><strong>A Next-Generation, AI-Native Terminal Workspace</strong></p>
   
   <p>
-    <img src="https://img.shields.io/github/v/release/lordbobby-dot/novaterm?label=version&color=blue" alt="version" />
-    <img src="https://img.shields.io/github/license/lordbobby-dot/novaterm?color=blue" alt="license" />
+    <img src="https://img.shields.io/github/v/release/novitaswebworks/novaterm?label=version&color=blue" alt="version" />
+    <img src="https://img.shields.io/github/license/novitaswebworks/novaterm?color=blue" alt="license" />
   </p>
 
   <p>
@@ -25,7 +25,7 @@ Instead of juggling multiple tools, NovaTerm unifies your workspace:
 - 📝 **Code Editor:** Built-in editor powered by CodeMirror, complete with syntax highlighting and multi-file editing.
 - 📁 **File Explorer:** Visual file management, Git graphs, and source control integration right next to your command line.
 
-Weighing in at under 10MB on disk, it is lightweight, lightning-fast, and deeply customizable.
+Weighing in at under 10MB on disk, it is lightweight, lightning-fast (300ms cold start), and deeply customizable.
 
 ## ✨ Features
 
@@ -33,15 +33,15 @@ Weighing in at under 10MB on disk, it is lightweight, lightning-fast, and deeply
 - **Cross-Platform:** Available on Windows, macOS, and Linux.
 - **Agentic Workflows:** Let the AI plan tasks, read your workspace, and draft code using `NOVATERM.md` context.
 - **Zero Telemetry:** Your data, your keys, your machine. Completely local and private by default.
-- **Local LLM Support:** Plug in your own API keys for cloud providers, or connect seamlessly to LM Studio, Ollama, and MLX.
+- **BYOK & Local LLMs:** Plug in your own API keys for cloud providers, or connect seamlessly to local models using Ollama, LM Studio, and MLX.
 
 ## 🚀 Installation
 
-NovaTerm supports automatic cross-compilation via GitHub actions. Download the latest installer for your OS from the [Releases](https://github.com/lordbobby-dot/novaterm/releases) page.
+NovaTerm supports automatic cross-compilation via GitHub actions. Download the latest installer for your OS from the [Releases](https://github.com/novitaswebworks/novaterm/releases) page.
 
-- **macOS:** Download the `.dmg` or `.app.tar.gz`
+- **macOS:** Use Homebrew `brew tap novitaswebworks/tap && brew install novaterm` or download the universal `.dmg`
 - **Windows:** Download the `.msi` or `.exe` installer
-- **Linux:** Use the `.deb`, `.rpm`, or `.AppImage`
+- **Linux:** Use the `.deb`, `.rpm`, or `.AppImage` (Note: Currently built for `x86_64` / `amd64` architecture)
 
 *Note: On Windows, you may encounter a "Windows protected your PC" prompt because the binary is not currently code-signed. Click **More info** -> **Run anyway**.*
 
@@ -58,7 +58,7 @@ Want to build NovaTerm from source?
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/lordbobby-dot/novaterm.git
+   git clone https://github.com/novitaswebworks/novaterm.git
    cd novaterm
    ```
 
