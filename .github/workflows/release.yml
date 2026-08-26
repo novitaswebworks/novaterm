@@ -85,7 +85,7 @@ jobs:
           snapcraft --destructive-mode
           if [ ! -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
             SNAP_FILE=$(find . -maxdepth 1 -name "*.snap" | head -n 1)
-            snapcraft push "$SNAP_FILE" --release=stable
+            snapcraft upload "$SNAP_FILE" --release=stable
           else
             echo "Skipping snap publish - SNAPCRAFT_TOKEN not set"
           fi
