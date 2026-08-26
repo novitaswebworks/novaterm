@@ -90,6 +90,16 @@ jobs:
             echo "Skipping snap publish - SNAPCRAFT_TOKEN not set"
           fi
 
+      - name: Submit to Winget (Windows Only)
+        if: matrix.platform == 'windows-latest' && env.WINGET_TOKEN != ''
+        uses: vedantmgoyal2009/winget-releaser@v2
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        with:
+          identifier: NovitasWebWorks.NovaTerm
+          installers-regex: '\.msi$'
+          token: ${{ secrets.WINGET_TOKEN }}
+
   # ─────────────────────────────────────────────────────────────────────────
   # After ALL platform builds succeed, ping the website repo so it can
   # auto-update the VERSION, download links, and changelog.
