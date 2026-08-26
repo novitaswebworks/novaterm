@@ -1,4 +1,4 @@
-name: novaterm-apps
+name: novaterm-app
 base: core22
 version: 'git'
 summary: A Next-Generation, AI-Native Terminal Workspace
@@ -7,7 +7,7 @@ description: |
 confinement: classic
 
 apps:
-  novaterm-apps:
+  novaterm-app:
     command: usr/bin/novaterm
     environment:
       # Required for WebKitGTK apps in Snaps
