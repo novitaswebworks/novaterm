@@ -1,0 +1,23 @@
+      - name: Build and Publish Snap (Ubuntu Only)
+        if: matrix.platform == 'ubuntu-22.04'
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
+        run: |
+          # 1. Find the .deb file built by Tauri
+          DEB_FILE=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -n 1)
+          
+          # 2. Extract it to the folder expected by snapcraft.yaml
+          dpkg-deb -R "$DEB_FILE" snap/deb-extract
+          
+          # 3. Install Snapcraft and build the snap
+          sudo snap install snapcraft --classic
+          cd snap
+          snapcraft
+          
+          # 4. Push to snap store if we have credentials
+          if [ ! -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
+            SNAP_FILE=$(find . -maxdepth 1 -name "*.snap" | head -n 1)
+            snapcraft push "$SNAP_FILE" --release=stable
+          else
+            echo "Skipping snap publish - SNAPCRAFT_TOKEN not set"
+          fi

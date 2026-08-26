@@ -52,7 +52,7 @@ jobs:
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN || secrets.GITHUB_TOKEN }}
           # Updater signing — store private key + password as repo secrets:
           #   TAURI_SIGNING_PRIVATE_KEY  → base64-encoded .key file content
           #   TAURI_SIGNING_PRIVATE_KEY_PASSWORD → key password
