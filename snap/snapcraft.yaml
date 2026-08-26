@@ -1,0 +1,20 @@
+name: novaterm-apps
+base: core22
+version: 'git'
+summary: A Next-Generation, AI-Native Terminal Workspace
+description: |
+  NovaTerm unifies your workspace with a blazing fast terminal, a built-in code editor, and privacy-first local AI predictions (Ollama).
+confinement: classic
+
+apps:
+  novaterm-apps:
+    command: usr/bin/novaterm
+    environment:
+      # Required for WebKitGTK apps in Snaps
+      WEBKIT_DISABLE_COMPOSITING_MODE: "1"
+
+parts:
+  novaterm:
+    plugin: dump
+    # We will point this to the extracted .deb folder in GitHub Actions
+    source: ./deb-extract

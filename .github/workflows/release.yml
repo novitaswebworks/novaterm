@@ -73,6 +73,23 @@ jobs:
           prerelease: false
           args: ${{ matrix.platform == 'macos-latest' && '--target universal-apple-darwin' || '' }}
 
+      - name: Build and Publish Snap (Ubuntu Only)
+        if: matrix.platform == 'ubuntu-22.04'
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
+        run: |
+          DEB_FILE=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -n 1)
+          dpkg-deb -R "$DEB_FILE" snap/deb-extract
+          sudo snap install snapcraft --classic
+          cd snap
+          snapcraft
+          if [ ! -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
+            SNAP_FILE=$(find . -maxdepth 1 -name "*.snap" | head -n 1)
+            snapcraft push "$SNAP_FILE" --release=stable
+          else
+            echo "Skipping snap publish - SNAPCRAFT_TOKEN not set"
+          fi
+
   # ─────────────────────────────────────────────────────────────────────────
   # After ALL platform builds succeed, ping the website repo so it can
   # auto-update the VERSION, download links, and changelog.
