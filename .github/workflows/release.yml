@@ -82,7 +82,7 @@ jobs:
           dpkg-deb -R "$DEB_FILE" snap/deb-extract
           sudo snap install snapcraft --classic
           cd snap
-          snapcraft
+          snapcraft --destructive-mode
           if [ ! -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
             SNAP_FILE=$(find . -maxdepth 1 -name "*.snap" | head -n 1)
             snapcraft push "$SNAP_FILE" --release=stable
