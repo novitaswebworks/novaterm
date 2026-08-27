@@ -73,32 +73,42 @@ jobs:
           prerelease: false
           args: ${{ matrix.platform == 'macos-latest' && '--target universal-apple-darwin' || '' }}
 
-      - name: Build and Publish Snap (Ubuntu Only)
-        if: matrix.platform == 'ubuntu-22.04'
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
-        run: |
-          DEB_FILE=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -n 1)
-          dpkg-deb -R "$DEB_FILE" snap/deb-extract
-          sudo snap install snapcraft --classic
-          cd snap
-          snapcraft --destructive-mode
-          if [ ! -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
-            SNAP_FILE=$(find . -maxdepth 1 -name "*.snap" | head -n 1)
-            snapcraft upload "$SNAP_FILE" --release=stable
-          else
-            echo "Skipping snap publish - SNAPCRAFT_TOKEN not set"
-          fi
 
-      - name: Submit to Winget (Windows Only)
-        if: matrix.platform == 'windows-latest' && env.WINGET_TOKEN != ''
-        uses: vedantmgoyal2009/winget-releaser@v2
+
+      # - name: Submit to Winget (Windows Only)
+      #   if: matrix.platform == 'windows-latest' && env.WINGET_TOKEN != ''
+      #   uses: vedantmgoyal2009/winget-releaser@v2
+      #   env:
+      #     WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+      #   with:
+      #     identifier: NovitasWebWorks.NovaTerm
+      #     installers-regex: '\.msi$'
+      #     token: ${{ secrets.WINGET_TOKEN }}
+
+      - name: Build and Publish to Chocolatey (Windows Only)
+        if: matrix.platform == 'windows-latest'
         env:
-          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
-        with:
-          identifier: NovitasWebWorks.NovaTerm
-          installers-regex: '\.msi$'
-          token: ${{ secrets.WINGET_TOKEN }}
+          CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
+        run: |
+          # Find the built MSI
+          MSI_FILE=$(find src-tauri/target/release/bundle/msi -name "*.msi" | head -n 1)
+          
+          # Copy it into the choco tools directory
+          cp "$MSI_FILE" choco/tools/novaterm.msi
+          
+          cd choco
+          # Pack the Chocolatey package
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}" # Remove 'v' prefix if exists
+          choco pack novaterm.nuspec --version "$VERSION"
+          
+          if [ ! -z "$CHOCO_API_KEY" ]; then
+            NUPKG_FILE=$(find . -name "*.nupkg" | head -n 1)
+            choco push "$NUPKG_FILE" -k "$CHOCO_API_KEY" -s https://push.chocolatey.org/
+          else
+            echo "Skipping choco push - CHOCO_API_KEY not set"
+          fi
+        shell: bash
 
   # ─────────────────────────────────────────────────────────────────────────
   # After ALL platform builds succeed, ping the website repo so it can
