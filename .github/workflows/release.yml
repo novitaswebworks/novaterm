@@ -77,6 +77,7 @@ jobs:
 
       - name: Submit to Winget (Windows Only)
         if: matrix.platform == 'windows-latest'
+        continue-on-error: true
         uses: vedantmgoyal2009/winget-releaser@v2
         env:
           WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
