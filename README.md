@@ -35,6 +35,40 @@ Weighing in at under 10MB on disk, it is lightweight, lightning-fast (300ms cold
 - **Zero Telemetry:** Your data, your keys, your machine. Completely local and private by default.
 - **BYOK & Local LLMs:** Plug in your own API keys for cloud providers, or connect seamlessly to local models using Ollama, LM Studio, and MLX.
 
+## 📊 Repository Insights
+
+[![Total Views](https://img.shields.io/badge/Total_Views-230-blue?style=for-the-badge&logo=github)](https://github.com/ambaskaryash/NovaTerm)
+[![Total Clones](https://img.shields.io/badge/Total_Clones-212-success?style=for-the-badge&logo=github)](https://github.com/ambaskaryash/NovaTerm)
+[![Unique Visitors](https://img.shields.io/badge/Unique_Visitors-9-orange?style=for-the-badge)](https://github.com/ambaskaryash/NovaTerm)
+
+*A brief overview of community engagement and repository activity during the launch phase.*
+
+### 📈 Activity Highlights
+
+During our major release week (August 24 - 27, 2026), NovaTerm experienced a significant surge in community interest following releases across platforms like Snapcraft.
+
+| Metric | Count | Context |
+|:---|:---:|:---|
+| **Total Views** | 230 | High visibility during community announcements. |
+| **Total Clones** | 212 | Strong conversion rate from view to clone. |
+| **Unique Visitors** | 9 | Core audience exploring the repository. |
+| **Unique Cloners** | 64 | Includes automated CI/CD and bot traffic for testing (Chocolatey, Winget, etc.). |
+
+#### Traffic Timeline
+
+```mermaid
+xychart-beta
+    title "Recent Views & Clones (Aug 24 - Aug 27)"
+    x-axis ["Aug 24", "Aug 25", "Aug 26", "Aug 27"]
+    y-axis "Count" 0 --> 130
+    bar [1, 100, 82, 25]
+    line [1, 129, 78, 20]
+```
+*(**Bars:** Clones / Downloads | **Line:** Page Views)*
+
+> [!NOTE]
+> **Community Growth:** The spike on August 25th directly correlates with community outreach and new releases. The high number of clones indicates strong interest in trying the software locally, while automated systems actively build and test our latest versions!
+
 ## 🚀 Installation
 
 NovaTerm supports automatic cross-compilation via GitHub actions. Download the latest installer for your OS from the [Releases](https://github.com/novitaswebworks/novaterm/releases) page.
