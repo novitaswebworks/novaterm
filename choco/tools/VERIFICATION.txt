@@ -1,0 +1,9 @@
+VERIFICATION
+------------
+
+The `novaterm.msi` binary included in this package is generated automatically via GitHub Actions from the source code repository.
+
+To verify the integrity and authenticity of the binary, you can:
+1. Navigate to the official releases page: https://github.com/novitaswebworks/novaterm/releases
+2. Download the `.msi` file for the corresponding release version.
+3. Compare the checksum (SHA256) of the downloaded `.msi` file with the `novaterm.msi` file embedded in this Chocolatey package. They should match exactly.

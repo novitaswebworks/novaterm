@@ -6,6 +6,13 @@
     <title>NovaTerm</title>
     <authors>Novitas WebWorks</authors>
     <projectUrl>https://github.com/novitaswebworks/novaterm</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/novitaswebworks/novaterm/main/public/logo.png</iconUrl>
+    <licenseUrl>https://github.com/novitaswebworks/novaterm/blob/main/LICENSE</licenseUrl>
+    <packageSourceUrl>https://github.com/novitaswebworks/novaterm/tree/main/choco</packageSourceUrl>
+    <releaseNotes>https://github.com/novitaswebworks/novaterm/releases</releaseNotes>
+    <docsUrl>https://github.com/novitaswebworks/novaterm/blob/main/README.md</docsUrl>
+    <bugTrackerUrl>https://github.com/novitaswebworks/novaterm/issues</bugTrackerUrl>
+    <projectSourceUrl>https://github.com/novitaswebworks/novaterm</projectSourceUrl>
     <tags>terminal emulator ai</tags>
     <summary>NovaTerm — an open-source AI-native terminal emulator</summary>
     <description>NovaTerm is an AI-native terminal emulator.</description>
