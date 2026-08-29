@@ -75,15 +75,15 @@ jobs:
 
 
 
-      # - name: Submit to Winget (Windows Only)
-      #   if: matrix.platform == 'windows-latest' && env.WINGET_TOKEN != ''
-      #   uses: vedantmgoyal2009/winget-releaser@v2
-      #   env:
-      #     WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
-      #   with:
-      #     identifier: NovitasWebWorks.NovaTerm
-      #     installers-regex: '\.msi$'
-      #     token: ${{ secrets.WINGET_TOKEN }}
+      - name: Submit to Winget (Windows Only)
+        if: matrix.platform == 'windows-latest'
+        uses: vedantmgoyal2009/winget-releaser@v2
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        with:
+          identifier: NovitasWebWorks.NovaTerm
+          installers-regex: '\.msi$'
+          token: ${{ secrets.WINGET_TOKEN }}
 
       - name: Build and Publish to Chocolatey (Windows Only)
         if: matrix.platform == 'windows-latest'
