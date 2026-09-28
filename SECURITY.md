@@ -16,7 +16,7 @@ Please **don't** open a public GitHub issue for security reports.
 
 ## Supported versions
 
-Until `1.0.0`, only the latest minor gets security fixes. Right now that's `0.5.x`. 
+Only the latest minor version (`1.4.x`) receives active security patches. We recommend all users remain on the latest release. 
 
 ## What's in scope
 

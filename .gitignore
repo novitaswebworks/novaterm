@@ -29,4 +29,13 @@ stats.html
 
 # AI memory and secrets
 NOVATERM.md
+*.token
+*.pem
+*.key
+*.cert
+*.crt
 .env*
+
+# Analysis and reports
+*-report.json
+coverage/

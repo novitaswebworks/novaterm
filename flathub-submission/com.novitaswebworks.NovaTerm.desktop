@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=NovaTerm
-Comment=A Next-Generation, AI-Native Terminal Workspace
-Exec=novaterm
-Icon=com.novitaswebworks.NovaTerm
-Terminal=false
-Type=Application
-Categories=Development;Utility;TerminalEmulator;
-Keywords=terminal;prompt;ai;

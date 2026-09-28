@@ -6,7 +6,7 @@
     <title>NovaTerm</title>
     <authors>Novitas WebWorks</authors>
     <projectUrl>https://github.com/novitaswebworks/novaterm</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/novitaswebworks/novaterm/main/public/logo.png</iconUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/novitaswebworks/novaterm@v1.4.0/public/logo.png</iconUrl>
     <licenseUrl>https://github.com/novitaswebworks/novaterm/blob/main/LICENSE</licenseUrl>
     <packageSourceUrl>https://github.com/novitaswebworks/novaterm/tree/main/choco</packageSourceUrl>
     <releaseNotes>https://github.com/novitaswebworks/novaterm/releases</releaseNotes>
