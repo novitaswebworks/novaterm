@@ -193,10 +193,50 @@ function Toolbar({ block, all, onSearch }: ChromeProps) {
     ? null
     : fmtDuration(block.finishedAt - block.startedAt);
   const failed = !block.running && !block.ok && block.exitCode !== null;
+
+  const handleFixWithAi = () => {
+    const rawOut = all.readOutput(block.id) ?? "";
+    const out = capAttachOutput(rawOut);
+    const text = out
+      ? `The command failed with exit code ${block.exitCode}:\n$ ${block.command}\n\nError output:\n${out}\n\nPlease analyze what caused this error and suggest or run the fix.`
+      : `The command failed with exit code ${block.exitCode}:\n$ ${block.command}\n\nPlease analyze what caused this error and suggest or run the fix.`;
+    useChatStore.getState().attachSelection(text, "terminal");
+    toast.success("Error sent to AI Assistant");
+  };
+
+  const handleCopyOutput = () => {
+    const out = all.readOutput(block.id);
+    if (out) copy(out, "Output copied");
+    else toast.info("No output in block");
+  };
+
   return (
     <div className="bt-tools">
-      {failed && <span className="bt-exit">exit {block.exitCode}</span>}
+      {failed && (
+        <>
+          <span className="bt-exit">exit {block.exitCode}</span>
+          <button
+            type="button"
+            title="Ask AI to analyze and fix this error"
+            className="bt-fix-btn"
+            onClick={handleFixWithAi}
+          >
+            <HugeiconsIcon icon={SparklesIcon} size={11.5} strokeWidth={2} />
+            <span className="bt-fix-label">Fix with AI</span>
+          </button>
+        </>
+      )}
       {duration && <span className="bt-dur">{duration}</span>}
+      {!block.running && (
+        <button
+          type="button"
+          title="Copy output"
+          className="bt-btn"
+          onClick={handleCopyOutput}
+        >
+          <HugeiconsIcon icon={Copy01Icon} size={12.5} strokeWidth={1.75} />
+        </button>
+      )}
       {!block.running && !!block.command && (
         <button
           type="button"

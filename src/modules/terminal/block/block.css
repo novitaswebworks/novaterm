@@ -178,6 +178,33 @@
   color: var(--destructive, #e5706b);
 }
 
+.bt-fix-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  height: 18px;
+  padding: 0 6px;
+  margin-right: 2px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--destructive, #e5706b) 14%, transparent);
+  color: var(--destructive, #e5706b);
+  border: 1px solid color-mix(in srgb, var(--destructive, #e5706b) 28%, transparent);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-soft);
+}
+
+.bt-fix-btn:hover {
+  background: color-mix(in srgb, var(--destructive, #e5706b) 25%, transparent);
+  border-color: var(--destructive, #e5706b);
+  color: #fff;
+}
+
+.bt-fix-label {
+  line-height: 1;
+}
+
 .bt-tools,
 .bt-search {
   display: flex;
