@@ -90,7 +90,7 @@ jobs:
           identifier: NovitasWebWorks.NovaTerm
           installers-regex: '\.msi$'
           token: ${{ secrets.WINGET_TOKEN }}
-          release-user: novitaswebworks
+          fork-user: novitaswebworks
           release-repository: novaterm
           release-tag: ${{ inputs.tagName || github.ref_name }}
 
