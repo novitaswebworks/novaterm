@@ -169,7 +169,7 @@ jobs:
               "event_type": "app-released",
               "client_payload": {
                 "version": "${{ steps.meta.outputs.VERSION }}",
-                "notes": ${{ toJSON(steps.notes.outputs.NOTES) }}
+                "notes": ${{ toJSON(steps.meta.outputs.NOTES) }}
               }
             }'
           echo "Done - dispatched app-released v${{ steps.meta.outputs.VERSION }} to website"
