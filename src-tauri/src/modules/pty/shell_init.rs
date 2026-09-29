@@ -55,6 +55,132 @@ pub fn build_command(
     blocks: bool,
     shell: Option<String>,
 ) -> Result<CommandBuilder, String> {
+    match &workspace {
+        WorkspaceEnv::Ssh { host, user, port, key_path, remote_path, .. } => {
+            let mut cmd = CommandBuilder::new("ssh");
+            cmd.arg("-tt");
+            cmd.arg("-o");
+            cmd.arg("StrictHostKeyChecking=accept-new");
+            if let Some(p) = port {
+                cmd.arg("-p");
+                cmd.arg(p.to_string());
+            }
+            if let Some(k) = key_path.as_deref().filter(|k| !k.trim().is_empty()) {
+                cmd.arg("-i");
+                cmd.arg(k.trim());
+            }
+            let destination = match user.as_deref().filter(|u| !u.trim().is_empty()) {
+                Some(u) => format!("{}@{}", u.trim(), host.trim()),
+                None => host.trim().to_string(),
+            };
+            cmd.arg(destination);
+
+            let dir = cwd.unwrap_or_else(|| remote_path.clone());
+            let clean_dir = dir.trim();
+
+            let integration = remote_shell_integration_snippet();
+            let mut remote_cmd = String::new();
+
+            // cd into the requested directory first.
+            if !clean_dir.is_empty() && clean_dir != "~" && clean_dir != "$HOME" {
+                let escaped_cd = if let Some(stripped) = clean_dir.strip_prefix("~/") {
+                    format!("\"$HOME\"/{}", crate::modules::remote::shell_quote(stripped))
+                } else {
+                    crate::modules::remote::shell_quote(clean_dir)
+                };
+                remote_cmd.push_str(&format!("cd {escaped_cd} 2>/dev/null || true; "));
+            }
+
+            // Write shell integration to a temp rc file using a heredoc (avoids
+            // quoting issues with single-quoted strings inside SSH commands).
+            // The heredoc marker _NOVATERM_RC_ is unlikely to appear in the
+            // integration snippet itself.
+            remote_cmd.push_str(
+                "_nt=$(mktemp /tmp/.novaterm-rc.XXXXXX 2>/dev/null || echo /tmp/.novaterm-rc.$$); "
+            );
+            remote_cmd.push_str("cat >\"$_nt\" <<'_NOVATERM_RC_'\n");
+            remote_cmd.push_str(integration);
+            remote_cmd.push('\n');
+            remote_cmd.push_str("_NOVATERM_RC_\n");
+            remote_cmd.push_str("export NOVATERM_TERMINAL=1; ");
+            // Determine user shell
+            remote_cmd.push_str(
+                "if [ -n \"$SHELL\" ]; then _s=\"$SHELL\"; \
+                 elif [ -x /bin/bash ]; then _s=/bin/bash; \
+                 else _s=sh; fi; "
+            );
+            // Branch by shell type for correct rc-file sourcing
+            remote_cmd.push_str("case \"$(basename \"$_s\")\" in ");
+            // bash --rcfile sources our file (which also sources user rc)
+            remote_cmd.push_str("bash) exec \"$_s\" --rcfile \"$_nt\" -i;; ");
+            // zsh: set ZDOTDIR to a temp dir with a .zshrc that first sources
+            // the user's real zshrc then our hooks.
+            remote_cmd.push_str(
+                "zsh) _zd=/tmp/.novaterm-zsh.$$; mkdir -p \"$_zd\"; \
+                 { printf '%s\\n' '[ -f \"$HOME/.zshrc\" ] && ZDOTDIR=\"$HOME\" source \"$HOME/.zshrc\"'; \
+                 cat \"$_nt\"; } >\"$_zd/.zshrc\"; \
+                 ZDOTDIR=\"$_zd\" exec \"$_s\" -i;; "
+            );
+            // POSIX sh: ENV is sourced for interactive shells
+            remote_cmd.push_str("*) ENV=\"$_nt\" exec \"$_s\" -i;; ");
+            remote_cmd.push_str("esac");
+
+            cmd.arg(remote_cmd);
+            ensure_utf8_locale(&mut cmd);
+            cmd.env("TERM", "xterm-256color");
+            cmd.env("COLORTERM", "truecolor");
+            cmd.env("NOVATERM_TERMINAL", "1");
+            return Ok(cmd);
+        }
+        WorkspaceEnv::DevContainer { container_id, remote_path, .. } => {
+            crate::modules::remote::devcontainer::validate_container_id(container_id)?;
+            let mut cmd = CommandBuilder::new("docker");
+            cmd.arg("exec");
+            cmd.arg("-it");
+            let dir = cwd.unwrap_or_else(|| remote_path.clone());
+            let clean_dir = dir.trim();
+            if !clean_dir.is_empty() && clean_dir != "~" {
+                cmd.arg("-w");
+                cmd.arg(clean_dir);
+            }
+            cmd.arg(container_id);
+            cmd.arg("sh");
+            cmd.arg("-c");
+
+            // Write integration to a temp file, then exec into the right
+            // shell with rc-file sourcing (same approach as SSH branch).
+            let integration = remote_shell_integration_snippet();
+            let mut docker_cmd = String::new();
+            docker_cmd.push_str(
+                "_nt=$(mktemp /tmp/.novaterm-rc.XXXXXX 2>/dev/null || echo /tmp/.novaterm-rc.$$); "
+            );
+            docker_cmd.push_str("cat >\"$_nt\" <<'_NOVATERM_RC_'\n");
+            docker_cmd.push_str(integration);
+            docker_cmd.push('\n');
+            docker_cmd.push_str("_NOVATERM_RC_\n");
+            docker_cmd.push_str("export NOVATERM_TERMINAL=1; ");
+            docker_cmd.push_str(
+                "if command -v bash >/dev/null 2>&1; then \
+                 exec bash --rcfile \"$_nt\" -i; "
+            );
+            docker_cmd.push_str(
+                "elif command -v zsh >/dev/null 2>&1; then \
+                 _zd=/tmp/.novaterm-zsh.$$; mkdir -p \"$_zd\"; \
+                 { printf '%s\\n' '[ -f \"$HOME/.zshrc\" ] && ZDOTDIR=\"$HOME\" source \"$HOME/.zshrc\"'; \
+                 cat \"$_nt\"; } >\"$_zd/.zshrc\"; \
+                 ZDOTDIR=\"$_zd\" exec zsh -i; "
+            );
+            docker_cmd.push_str("else ENV=\"$_nt\" exec sh -i; fi");
+            cmd.arg(docker_cmd);
+            ensure_utf8_locale(&mut cmd);
+            cmd.env("TERM", "xterm-256color");
+            cmd.env("COLORTERM", "truecolor");
+            cmd.env("NOVATERM_TERMINAL", "1");
+            return Ok(cmd);
+        }
+        _ => {}
+    }
+
     let shell = sanitize_shell_override(shell);
     #[cfg(unix)]
     {
@@ -119,6 +245,96 @@ pub fn list_shells() -> Vec<ShellInfo> {
     {
         windows::list_shells()
     }
+}
+
+/// Returns a minimal shell integration script for remote sessions (SSH,
+/// DevContainer). Written to a temp file on the remote and sourced via
+/// `--rcfile` (bash), `ZDOTDIR` (zsh), or `ENV` (POSIX sh).
+///
+/// The script:
+///   1. Sources the user's existing rc files (bash only; zsh handled by ZDOTDIR)
+///   2. Defines `_novaterm_urlencode` and `_novaterm_precmd`
+///   3. Hooks into PROMPT_COMMAND (bash) or precmd_functions (zsh)
+///   4. Emits OSC 133 D/A/B and OSC 7 for cwd tracking
+///
+/// The output is raw shell script (not Rust-escaped) since it is injected
+/// into a single-quoted heredoc on the remote side.
+fn remote_shell_integration_snippet() -> &'static str {
+    r#"# novaterm remote shell integration
+if [ -z "$__NOVATERM_HOOKS_LOADED" ]; then
+__NOVATERM_HOOKS_LOADED=1
+
+# Source user rc files when used as bash --rcfile (which skips normal rc).
+# For zsh, the ZDOTDIR .zshrc already sources user's ~/.zshrc before this.
+if [ -n "$BASH_VERSION" ]; then
+  [ -f /etc/profile ] && . /etc/profile
+  [ -f /etc/bashrc ] && . /etc/bashrc
+  if [ -f "$HOME/.bash_profile" ]; then
+    . "$HOME/.bash_profile"
+  elif [ -f "$HOME/.bash_login" ]; then
+    . "$HOME/.bash_login"
+  elif [ -f "$HOME/.profile" ]; then
+    . "$HOME/.profile"
+  fi
+  [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+fi
+
+_novaterm_urlencode() {
+  local LC_ALL=C s="$1" i c
+  for (( i=0; i<${#s}; i++ )); do
+    c="${s:i:1}"
+    case "$c" in
+      [a-zA-Z0-9/._~-]) printf '%s' "$c";;
+      *) printf '%%%02X' "'$c";;
+    esac
+  done
+}
+
+_novaterm_precmd() {
+  local _novaterm_ret=$?
+  printf '\033]133;D;%s\033\\' "$_novaterm_ret"
+  printf '\033]7;file://%s%s\033\\' \
+    "${HOSTNAME:-$(hostname 2>/dev/null || echo unknown)}" \
+    "$(_novaterm_urlencode "$PWD")"
+  printf '\033]133;A\033\\'
+}
+
+if [ -n "$ZSH_VERSION" ]; then
+  autoload -Uz add-zsh-hook 2>/dev/null
+  if (( $+functions[add-zsh-hook] )); then
+    add-zsh-hook precmd _novaterm_precmd
+    add-zsh-hook preexec '_novaterm_preexec'
+  else
+    precmd_functions=(_novaterm_precmd $precmd_functions)
+    preexec_functions=(_novaterm_preexec $preexec_functions)
+  fi
+  _novaterm_preexec() { printf '\033]133;C\033\\'; }
+  # Inject OSC 133 B into PS1 for zsh
+  if [[ "$PS1" != *$'\033]133;B'* ]]; then
+    PS1=$'%{\033]133;B\033\\%}'"$PS1"
+  fi
+elif [ -n "$BASH_VERSION" ]; then
+  case ":${PROMPT_COMMAND:-}:" in
+    *:_novaterm_precmd:*) ;;
+    *) PROMPT_COMMAND="_novaterm_precmd${PROMPT_COMMAND:+;$PROMPT_COMMAND}";;
+  esac
+  # bash 4.4+: PS0 for pre-exec marker (OSC 133 C)
+  if [ "${BASH_VERSINFO[0]:-0}" -ge 5 ] || \
+     { [ "${BASH_VERSINFO[0]:-0}" -eq 4 ] && \
+       [ "${BASH_VERSINFO[1]:-0}" -ge 4 ]; }; then
+    PS0="$(printf '\033]133;C\033\\')${PS0:-}"
+  fi
+  # Inject OSC 133 B into PS1 for bash
+  case "$PS1" in
+    *133\;B*) ;;
+    *) PS1="\[\033]133;B\033\\\]$PS1";;
+  esac
+else
+  PROMPT_COMMAND="_novaterm_precmd${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+fi
+
+_novaterm_precmd
+fi"#
 }
 
 fn ensure_utf8_locale(cmd: &mut CommandBuilder) {

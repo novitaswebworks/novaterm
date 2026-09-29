@@ -19,8 +19,9 @@ if (import.meta.env.DEV && import.meta.env.VITE_REACT_SCAN === "true") {
   scan({ enabled: true });
 }
 
-// Reap PTY sessions orphaned by a prior webview load before any tab spawns.
+// Reap PTY and MCP sessions orphaned by a prior webview load before any tab spawns.
 await invoke("pty_close_all").catch(() => {});
+await invoke("mcp_kill_all").catch(() => {});
 
 // Seed before first paint so default tab mounts at target cwd (no flicker).
 await initLaunchDir();

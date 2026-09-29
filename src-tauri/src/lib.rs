@@ -1,6 +1,6 @@
 pub mod modules;
 
-use modules::{agent, fs, git, history, lsp, net, pty, secrets, shell, workspace};
+use modules::{agent, fs, git, history, lsp, mcp, net, pty, remote, secrets, shell, workspace};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 #[cfg(target_os = "macos")]
@@ -222,6 +222,7 @@ pub fn run() {
         .manage(fs::watch::FsWatchState::default())
         .manage(history::HistoryState::default())
         .manage(lsp::LspState::default())
+        .manage(mcp::McpState::default())
         .manage(fs::grep::ContentSearchState::default())
         .manage({
             let registry = workspace::WorkspaceRegistry::default();
@@ -231,6 +232,7 @@ pub fn run() {
             }
             registry
         })
+        .manage(remote::ports::PortForwardState::default())
         .manage(LaunchDir(Mutex::new(cli_dir)))
         .invoke_handler(tauri::generate_handler![
             pty::pty_open,
@@ -314,6 +316,20 @@ pub fn run() {
             history::history_commands,
             history::history_record,
             history::history_list,
+            mcp::mcp_spawn,
+            mcp::mcp_send,
+            mcp::mcp_kill,
+            mcp::mcp_kill_all,
+            remote::ssh::ssh_test_connection,
+            remote::ssh::ssh_get_remote_home,
+            remote::ssh::ssh_list_system_configs,
+            remote::devcontainer::devcontainer_detect,
+            remote::devcontainer::devcontainer_list_containers,
+            remote::devcontainer::devcontainer_start,
+            remote::ports::ports_list,
+            remote::ports::port_forward_start,
+            remote::ports::port_forward_stop,
+            remote::ports::port_forward_list_active,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
@@ -323,6 +339,12 @@ pub fn run() {
             if let tauri::RunEvent::Exit = event {
                 if let Some(state) = app.try_state::<lsp::LspState>() {
                     state.kill_all();
+                }
+                if let Some(state) = app.try_state::<mcp::McpState>() {
+                    state.kill_all();
+                }
+                if let Some(state) = app.try_state::<remote::ports::PortForwardState>() {
+                    state.stop_all();
                 }
             }
         });

@@ -70,6 +70,23 @@ pub fn fs_read_dir(
     workspace: Option<WorkspaceEnv>,
 ) -> Result<Vec<DirEntry>, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
+    if let WorkspaceEnv::Ssh { host, user, port, key_path, .. } = &workspace {
+        return crate::modules::remote::ssh::ssh_read_dir(
+            host,
+            user.as_deref(),
+            *port,
+            key_path.as_deref(),
+            &path,
+            show_hidden,
+        );
+    }
+    if let WorkspaceEnv::DevContainer { container_id, .. } = &workspace {
+        return crate::modules::remote::devcontainer::devcontainer_read_dir(
+            container_id,
+            &path,
+            show_hidden,
+        );
+    }
     let root = resolve_path(&path, &workspace);
     let read = std::fs::read_dir(&root).map_err(|e| {
         log::debug!("fs_read_dir({}) failed: {e}", root.display());
@@ -156,6 +173,23 @@ pub fn list_subdirs(
     workspace: Option<WorkspaceEnv>,
 ) -> Result<Vec<String>, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
+    if let WorkspaceEnv::Ssh { host, user, port, key_path, .. } = &workspace {
+        let entries = crate::modules::remote::ssh::ssh_read_dir(
+            host,
+            user.as_deref(),
+            *port,
+            key_path.as_deref(),
+            &path,
+            show_hidden,
+        )?;
+        let mut dirs: Vec<String> = entries
+            .into_iter()
+            .filter(|e| matches!(e.kind, EntryKind::Dir))
+            .map(|e| e.name)
+            .collect();
+        dirs.sort_by_key(|a| a.to_lowercase());
+        return Ok(dirs);
+    }
     let root = resolve_path(&path, &workspace);
     let read = std::fs::read_dir(&root).map_err(|e| {
         log::debug!("list_subdirs({}) read_dir failed: {e}", root.display());

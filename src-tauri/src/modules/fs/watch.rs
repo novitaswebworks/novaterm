@@ -235,6 +235,9 @@ pub fn fs_watch_add(
     registry: State<'_, WorkspaceRegistry>,
 ) -> Result<(), String> {
     let workspace = WorkspaceEnv::from_option(workspace);
+    if workspace.is_ssh() || workspace.is_devcontainer() {
+        return Ok(());
+    }
     let prepared = prepare_add(&registry, &workspace, paths);
     if prepared.is_empty() {
         return Ok(());
@@ -254,6 +257,9 @@ pub fn fs_watch_remove(
     state: State<'_, FsWatchState>,
 ) -> Result<(), String> {
     let workspace = WorkspaceEnv::from_option(workspace);
+    if workspace.is_ssh() || workspace.is_devcontainer() {
+        return Ok(());
+    }
     // A removed/renamed dir no longer canonicalizes; fall back so the refcount
     // entry is still released.
     let prepared: Vec<PathBuf> = paths

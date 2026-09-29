@@ -430,7 +430,7 @@ configureRendererPool({
 function ensureSession(
   leafId: number,
   initialCwd?: string,
-  blocks = false,
+  blocks = true,
 ): Session {
   const existing = sessions.get(leafId);
   if (existing) return existing;
@@ -831,7 +831,7 @@ export function useTerminalSession({
   visible,
   focused = true,
   initialCwd,
-  blocks = false,
+  blocks = true,
   onSearchReady,
   onExit,
   onCwd,

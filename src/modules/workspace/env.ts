@@ -1,8 +1,32 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { setLastWslDistro } from "@/modules/settings/store";
+import type { SshConfig } from "./ssh";
+import { getSavedSshProfiles } from "./ssh";
 
-export type WorkspaceEnv = { kind: "local" } | { kind: "wsl"; distro: string };
+export type SshWorkspaceEnv = {
+  kind: "ssh";
+  id: string;
+  label: string;
+  host: string;
+  user?: string;
+  port?: number;
+  key_path?: string;
+  remote_path: string;
+};
+
+export type DevContainerWorkspaceEnv = {
+  kind: "devcontainer";
+  container_id: string;
+  name: string;
+  remote_path: string;
+};
+
+export type WorkspaceEnv =
+  | { kind: "local" }
+  | { kind: "wsl"; distro: string }
+  | SshWorkspaceEnv
+  | DevContainerWorkspaceEnv;
 
 export type WslDistro = {
   name: string;
@@ -13,10 +37,12 @@ export type WslDistro = {
 type State = {
   env: WorkspaceEnv;
   distros: WslDistro[];
+  sshProfiles: SshConfig[];
   loading: boolean;
   error: string | null;
   setEnv: (env: WorkspaceEnv) => void;
   refreshDistros: () => Promise<WslDistro[]>;
+  refreshSshProfiles: () => void;
 };
 
 export const LOCAL_WORKSPACE: WorkspaceEnv = { kind: "local" };
@@ -24,6 +50,7 @@ export const LOCAL_WORKSPACE: WorkspaceEnv = { kind: "local" };
 export const useWorkspaceEnvStore = create<State>((set) => ({
   env: LOCAL_WORKSPACE,
   distros: [],
+  sshProfiles: getSavedSshProfiles(),
   loading: false,
   error: null,
   setEnv: (env) => {
@@ -41,6 +68,9 @@ export const useWorkspaceEnvStore = create<State>((set) => ({
       return [];
     }
   },
+  refreshSshProfiles: () => {
+    set({ sshProfiles: getSavedSshProfiles() });
+  },
 }));
 
 export function currentWorkspaceEnv(): WorkspaceEnv {
@@ -48,13 +78,17 @@ export function currentWorkspaceEnv(): WorkspaceEnv {
 }
 
 export function workspaceScopeKey(env: WorkspaceEnv): string {
-  return env.kind === "wsl" ? `wsl:${env.distro}` : "local";
+  if (env.kind === "wsl") return `wsl:${env.distro}`;
+  if (env.kind === "ssh") return `ssh:${env.id}`;
+  if (env.kind === "devcontainer") return `devcontainer:${env.container_id}`;
+  return "local";
 }
 
 export function parseWorkspaceScopeKey(key: string): WorkspaceEnv {
-  return key.startsWith("wsl:")
-    ? { kind: "wsl", distro: key.slice("wsl:".length) }
-    : LOCAL_WORKSPACE;
+  if (key.startsWith("wsl:")) {
+    return { kind: "wsl", distro: key.slice("wsl:".length) };
+  }
+  return LOCAL_WORKSPACE;
 }
 
 export function currentWorkspaceScopeKey(): string {

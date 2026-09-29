@@ -15,6 +15,7 @@ import {
   WHISPERCPP_DEFAULT_BASE_URL,
 } from "@/modules/ai/config";
 import type { KeyBinding, ShortcutId } from "@/modules/shortcuts/shortcuts";
+import type { McpServerConfig } from "@/modules/mcp/types";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { LazyStore } from "@tauri-apps/plugin-store";
 
@@ -165,6 +166,7 @@ export type Preferences = {
   editorFormatOnSave: boolean;
   lspActivation: Record<string, LspActivation>;
   lspCustomServers: LspCustomServer[];
+  mcpServers: McpServerConfig[];
 };
 
 export type LspActivation = "enabled" | "dismissed";
@@ -234,6 +236,7 @@ const KEY_EDITOR_AUTO_SAVE_DELAY = "editorAutoSaveDelay";
 const KEY_EDITOR_FORMAT_ON_SAVE = "editorFormatOnSave";
 const KEY_LSP_ACTIVATION = "lspActivation";
 const KEY_LSP_CUSTOM_SERVERS = "lspCustomServers";
+const KEY_MCP_SERVERS = "mcpServers";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
 export const TERMINAL_FONT_SIZE_MIN = 8;
@@ -304,6 +307,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   editorFormatOnSave: false,
   lspActivation: {},
   lspCustomServers: [],
+  mcpServers: [],
 };
 
 const store = new LazyStore(STORE_PATH, { defaults: {}, autoSave: 200 });
@@ -477,7 +481,14 @@ export async function loadPreferences(): Promise<Preferences> {
     lspCustomServers:
       get<LspCustomServer[]>(KEY_LSP_CUSTOM_SERVERS) ??
       DEFAULT_PREFERENCES.lspCustomServers,
+    mcpServers:
+      get<McpServerConfig[]>(KEY_MCP_SERVERS) ??
+      DEFAULT_PREFERENCES.mcpServers,
   };
+}
+
+export async function setMcpServers(value: McpServerConfig[]): Promise<void> {
+  await writePref(KEY_MCP_SERVERS, value);
 }
 
 export async function setLspActivation(
@@ -819,6 +830,7 @@ export async function onPreferencesChange(
     [KEY_EDITOR_FORMAT_ON_SAVE]: "editorFormatOnSave",
     [KEY_LSP_ACTIVATION]: "lspActivation",
     [KEY_LSP_CUSTOM_SERVERS]: "lspCustomServers",
+    [KEY_MCP_SERVERS]: "mcpServers",
   };
   // Same-process writes still fire onChange immediately; cross-window writes
   // arrive via the Tauri event emitted by writePref().

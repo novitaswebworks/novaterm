@@ -24,6 +24,8 @@ import {
   type ProviderId,
 } from "../config";
 import { buildTools, type ToolContext } from "../tools/tools";
+import { buildDynamicMcpTools } from "../tools/mcp";
+import { useMcpStore } from "@/modules/mcp/mcpStore";
 import { compactModelMessagesDetailed } from "./compact";
 import type { ProviderKeys, CustomEndpointKeys } from "./keyring";
 import { createProxyFetch } from "./proxyFetch";
@@ -303,8 +305,25 @@ export function buildConfiguredLanguageModel(
   });
 }
 
-const PLAN_MODE_PROMPT = `## PLAN MODE — ACTIVE
-Mutating tools (write_file, edit, multi_edit, create_directory) will queue their changes for the user to review as a single diff. Do NOT execute bash_run or bash_background while plan mode is active — restrict yourself to reads (read_file, grep, glob, list_directory) and the queued mutations. After queueing the full set of edits, stop and return a brief summary; do not continue acting until the user has accepted/rejected.`;
+const PLAN_MODE_PROMPT = `## PLAN MODE: ACTIVE
+Mutating tools (write_file, edit, multi_edit, create_directory) will queue their changes for the user to review as a single diff. Do NOT execute bash_run or bash_background while plan mode is active: restrict yourself to reads (read_file, grep, glob, list_directory) and the queued mutations. After queueing the full set of edits, stop and return a brief summary; do not continue acting until the user has accepted/rejected.`;
+
+function buildMcpSystemGuidance(): string {
+  const activeTools = useMcpStore.getState().getAvailableTools();
+  if (activeTools.length === 0) return "";
+
+  const serverNames = Array.from(
+    new Set(activeTools.map((t) => t.serverName)),
+  ).join(", ");
+  const toolList = activeTools
+    .map(
+      (t) =>
+        `- \`mcp_${t.serverId.replace(/[^a-zA-Z0-9_]/g, "_")}_${t.tool.name.replace(/[^a-zA-Z0-9_]/g, "_")}\`: ${t.tool.description || t.tool.name}`,
+    )
+    .join("\n");
+
+  return `\n\n## CONNECTED MCP ECOSYSTEM (${serverNames})\nYou have direct access to the following dynamic Model Context Protocol tools. PROACTIVELY use these tools when relevant rather than guessing or refusing:\n${toolList}`;
+}
 
 function buildStableSystem(
   modelId: string,
@@ -314,16 +333,16 @@ function buildStableSystem(
 ): string {
   const base = selectSystemPrompt(modelId);
   const personaBlock = persona?.instructions.trim()
-    ? `\n\n## ACTIVE AGENT — ${persona.name}\n${persona.instructions.trim()}`
+    ? `\n\n## ACTIVE AGENT: ${persona.name}\n${persona.instructions.trim()}`
     : "";
   const customBlock = customInstructions?.trim()
-    ? `\n\n## USER CUSTOM INSTRUCTIONS — follow unless they conflict with safety rules above\n${customInstructions.trim()}`
+    ? `\n\n## USER CUSTOM INSTRUCTIONS: follow unless they conflict with safety rules above\n${customInstructions.trim()}`
     : "";
   const memoryBlock =
     projectMemory && projectMemory.trim().length > 0
-      ? `\n\n## PROJECT — NOVATERM.md\n${projectMemory.trim()}`
+      ? `\n\n## PROJECT: NOVATERM.md\n${projectMemory.trim()}`
       : "";
-  return `${base}${memoryBlock}${personaBlock}${customBlock}`;
+  return `${base}${memoryBlock}${personaBlock}${customBlock}${buildMcpSystemGuidance()}`;
 }
 
 // OpenAI / Gemini / DeepSeek apply prefix caching automatically; only
@@ -439,19 +458,21 @@ export async function runAgentStream(opts: RunAgentOptions) {
     opts.onCompact?.({ droppedCount: compact.droppedCount });
   }
 
-  const messages: ModelMessage[] = [{ role: "system", content: stableSystem }];
-  if (opts.planMode) {
-    messages.push({ role: "system", content: PLAN_MODE_PROMPT });
-  }
-  messages.push(...compactedHistory);
+  const fullSystem = opts.planMode
+    ? `${stableSystem}\n\n${PLAN_MODE_PROMPT}`
+    : stableSystem;
 
-  const finalMessages = applyCacheBreakpoints(messages, provider);
+  const finalMessages = applyCacheBreakpoints(compactedHistory, provider);
 
   let stepsSeen = 0;
   return streamText({
     model,
+    system: fullSystem,
     messages: finalMessages,
-    tools: buildTools(opts.toolContext),
+    tools: {
+      ...buildTools(opts.toolContext),
+      ...buildDynamicMcpTools(),
+    },
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
     abortSignal: opts.abortSignal,
     onStepFinish: (step) => {
@@ -460,11 +481,15 @@ export async function runAgentStream(opts: RunAgentOptions) {
         const last = step.toolCalls?.[step.toolCalls.length - 1];
         if (last) {
           const label = TOOL_LABELS[last.toolName];
-          opts.onStep(
-            label
-              ? label((last.input ?? {}) as Record<string, unknown>)
-              : `Calling ${last.toolName}`,
-          );
+          if (label) {
+            opts.onStep(label((last.input ?? {}) as Record<string, unknown>));
+          } else if (last.toolName.startsWith("mcp_")) {
+            opts.onStep(
+              `Using MCP tool: ${last.toolName.replace(/^mcp_/, "").replace(/_/g, " ")}`,
+            );
+          } else {
+            opts.onStep(`Calling ${last.toolName}`);
+          }
         } else if (step.text) {
           opts.onStep("Writing");
         }

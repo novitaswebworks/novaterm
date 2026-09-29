@@ -44,7 +44,7 @@ export const TerminalPane = memo(
       visible,
       focused = true,
       initialCwd,
-      blocks = false,
+      blocks = true,
       onSearchReady,
       onExit,
       onCwd,

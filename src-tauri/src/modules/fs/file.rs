@@ -46,6 +46,21 @@ pub struct FileStat {
 #[tauri::command]
 pub fn fs_read_file(path: String, workspace: Option<WorkspaceEnv>) -> Result<ReadResult, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
+    if let WorkspaceEnv::Ssh { host, user, port, key_path, .. } = &workspace {
+        return crate::modules::remote::ssh::ssh_read_file(
+            host,
+            user.as_deref(),
+            *port,
+            key_path.as_deref(),
+            &path,
+        );
+    }
+    if let WorkspaceEnv::DevContainer { container_id, .. } = &workspace {
+        return crate::modules::remote::devcontainer::devcontainer_read_file(
+            container_id,
+            &path,
+        );
+    }
     let p = resolve_path(&path, &workspace);
     let meta = std::fs::metadata(&p).map_err(|e| {
         log::debug!("fs_read_file stat({}) failed: {e}", p.display());
@@ -91,6 +106,7 @@ fn write_atomic(target: &Path, content: &[u8]) -> std::io::Result<()> {
     let parent = target.parent().ok_or_else(|| {
         std::io::Error::new(std::io::ErrorKind::InvalidInput, "path has no parent")
     })?;
+    fs::create_dir_all(parent)?;
     let mut tmp = NamedTempFile::new_in(parent)?;
     tmp.as_file_mut().write_all(content)?;
     tmp.as_file_mut().sync_all()?;
@@ -107,6 +123,39 @@ pub fn fs_write_file(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let workspace = WorkspaceEnv::from_option(workspace);
+    if let WorkspaceEnv::Ssh { host, user, port, key_path, .. } = &workspace {
+        crate::modules::remote::ssh::ssh_write_file(
+            host,
+            user.as_deref(),
+            *port,
+            key_path.as_deref(),
+            &path,
+            &content,
+        )?;
+        let _ = app.emit(
+            "fs:file-written",
+            FileWrittenEvent {
+                path: path.clone(),
+                source,
+            },
+        );
+        return Ok(());
+    }
+    if let WorkspaceEnv::DevContainer { container_id, .. } = &workspace {
+        crate::modules::remote::devcontainer::devcontainer_write_file(
+            container_id,
+            &path,
+            &content,
+        )?;
+        let _ = app.emit(
+            "fs:file-written",
+            FileWrittenEvent {
+                path: path.clone(),
+                source,
+            },
+        );
+        return Ok(());
+    }
     let target = resolve_path(&path, &workspace);
     let original_permissions = fs::metadata(&target).ok().map(|m| m.permissions());
     write_atomic(&target, content.as_bytes()).map_err(|e| {
@@ -117,6 +166,7 @@ pub fn fs_write_file(
     if let Some(perms) = original_permissions {
         let _ = fs::set_permissions(&target, perms);
     }
+
     let _ = app.emit(
         "fs:file-written",
         FileWrittenEvent {
@@ -131,6 +181,9 @@ pub fn fs_write_file(
 #[tauri::command]
 pub fn fs_canonicalize(path: String, workspace: Option<WorkspaceEnv>) -> Result<String, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
+    if workspace.is_ssh() || workspace.is_devcontainer() {
+        return Ok(path);
+    }
     let p = resolve_path(&path, &workspace);
     let canon = std::fs::canonicalize(&p).map_err(|e| e.to_string())?;
     Ok(super::to_canon(&canon))
@@ -139,6 +192,15 @@ pub fn fs_canonicalize(path: String, workspace: Option<WorkspaceEnv>) -> Result<
 #[tauri::command]
 pub fn fs_stat(path: String, workspace: Option<WorkspaceEnv>) -> Result<FileStat, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
+    if let WorkspaceEnv::Ssh { host, user, port, key_path, .. } = &workspace {
+        return crate::modules::remote::ssh::ssh_stat(
+            host,
+            user.as_deref(),
+            *port,
+            key_path.as_deref(),
+            &path,
+        );
+    }
     let p = resolve_path(&path, &workspace);
     let meta = std::fs::metadata(&p).map_err(|e| e.to_string())?;
     let kind = if meta.is_dir() {

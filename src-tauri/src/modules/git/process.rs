@@ -47,6 +47,8 @@ fn workspace_cache_key(workspace: &WorkspaceEnv) -> String {
     match workspace {
         WorkspaceEnv::Local => "local".into(),
         WorkspaceEnv::Wsl { distro } => format!("wsl:{distro}"),
+        WorkspaceEnv::Ssh { id, .. } => format!("ssh:{id}"),
+        WorkspaceEnv::DevContainer { container_id, .. } => format!("devcontainer:{container_id}"),
     }
 }
 

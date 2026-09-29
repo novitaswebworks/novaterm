@@ -6,6 +6,7 @@ export type SettingsTab =
   | "shortcuts"
   | "models"
   | "agents"
+  | "mcp"
   | "about"
   | "vault";
 

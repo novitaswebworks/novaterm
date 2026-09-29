@@ -1,6 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import {
+  currentWorkspaceEnv,
+  useWorkspaceEnvStore,
+  workspaceScopeKey,
+} from "@/modules/workspace";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { listenFsChanged, watchAdd, watchRemove } from "./watch";
 
@@ -82,6 +86,8 @@ type Options = {
 };
 
 export function useFileTree(rootPath: string | null, options?: Options) {
+  const workspaceEnv = useWorkspaceEnvStore((s) => s.env);
+  const scopeKey = workspaceScopeKey(workspaceEnv);
   const showHidden = usePreferencesStore((s) => s.showHidden);
   const showHiddenRef = useRef(showHidden);
   const gitDecorations = usePreferencesStore((s) => s.explorerGitDecorations);
@@ -189,8 +195,8 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     }
   }, []);
 
-  // Root change → restore the cached expansion for this root, re-scope watches,
-  // and persist the outgoing root's expansion on the way out.
+  // Root change or workspace change: restore expansion cache, re-scope watches,
+  // and reload the directory contents for the current environment.
   useEffect(() => {
     if (!rootPath) {
       setNodes({});
@@ -202,14 +208,10 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     setPendingCreate(null);
     setRenaming(null);
 
-    const restored = recallExpansion(rootPath);
+    const cacheKey = `${scopeKey}:${rootPath}`;
+    const restored = recallExpansion(cacheKey);
     setExpanded(new Set(restored));
     setNodes({});
-    // Sync the ref synchronously: nodesRef only updates after the next render,
-    // so without this a fast (cached) fetchChildren below would read the stale
-    // pre-clear "loaded" node, hit the sameDirListing early-return, and skip
-    // re-populating — leaving a valid root with an empty tree when rootPath
-    // changes rapidly (e.g. switching folders in quick succession).
     nodesRef.current = {};
 
     const toWatch = [rootPath, ...restored];
@@ -219,13 +221,13 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     watchAdd(toWatch);
 
     return () => {
-      rememberExpansion(rootPath, expandedRef.current);
+      rememberExpansion(cacheKey, expandedRef.current);
       if (watchedRef.current.size > 0) {
         watchRemove([...watchedRef.current]);
         watchedRef.current.clear();
       }
     };
-  }, [rootPath, fetchChildren]);
+  }, [rootPath, scopeKey, fetchChildren]);
 
   useEffect(() => {
     let alive = true;
@@ -251,15 +253,11 @@ export function useFileTree(rootPath: string | null, options?: Options) {
 
   useEffect(() => {
     if (!rootPath) return;
-    const loadedPaths = Object.entries(nodes)
+    const loadedPaths = Object.entries(nodesRef.current)
       .filter(([, state]) => state.status === "loaded")
       .map(([path]) => path);
     for (const path of loadedPaths) void fetchChildren(path);
-    // Re-list loaded directories when visibility or git-decoration prefs change.
-    // `nodes` is intentionally omitted so ordinary tree edits don't refetch
-    // every expanded directory.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rootPath, fetchChildren, nodes]);
+  }, [rootPath, showHidden, gitDecorations, fetchChildren]);
 
   const toggle = useCallback(
     (path: string) => {

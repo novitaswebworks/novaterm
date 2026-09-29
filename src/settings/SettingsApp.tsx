@@ -9,6 +9,7 @@ import {
   Settings01Icon,
   UserMultiple02Icon,
   KeyboardIcon,
+  ApiIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -18,6 +19,7 @@ import { VaultSection } from "./sections/VaultSection";
 import { AgentsSection } from "./sections/AgentsSection";
 import { GeneralSection } from "./sections/GeneralSection";
 import { ModelsSection } from "./sections/ModelsSection";
+import { McpSection } from "./sections/McpSection";
 import { ShortcutsSection } from "./sections/ShortcutsSection";
 import { ThemesSection } from "./sections/ThemesSection";
 
@@ -54,6 +56,12 @@ const TABS: {
     component: AgentsSection,
   },
   {
+    id: "mcp",
+    label: "MCP",
+    icon: ApiIcon,
+    component: McpSection,
+  },
+  {
     id: "about",
     label: "About",
     icon: InformationCircleIcon,
@@ -66,7 +74,9 @@ const VALID_TABS: SettingsTab[] = [
   "themes",
   "shortcuts",
   "models",
+  "vault",
   "agents",
+  "mcp",
   "about",
 ];
 

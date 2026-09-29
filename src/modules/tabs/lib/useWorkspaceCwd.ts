@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useWorkspaceEnvStore, workspaceScopeKey } from "@/modules/workspace";
 import type { Tab } from "./useTabs";
 
 type Result = {
@@ -11,7 +12,15 @@ export function useWorkspaceCwd(
   tabs: Tab[],
   home: string | null,
 ): Result {
+  const workspaceEnv = useWorkspaceEnvStore((s) => s.env);
+  const scopeKey = workspaceScopeKey(workspaceEnv);
   const lastTerminalCwd = useRef<string | null>(null);
+  const lastScopeKey = useRef<string>(scopeKey);
+
+  if (lastScopeKey.current !== scopeKey) {
+    lastScopeKey.current = scopeKey;
+    lastTerminalCwd.current = null;
+  }
 
   useEffect(() => {
     if (activeTab?.kind === "terminal" && activeTab.cwd) {
@@ -25,13 +34,12 @@ export function useWorkspaceCwd(
     const anyTerm = tabs.find((t) => t.kind === "terminal" && t.cwd);
     if (anyTerm?.kind === "terminal" && anyTerm.cwd) return anyTerm.cwd;
     return home;
-  }, [activeTab, tabs, home]);
+  }, [activeTab, tabs, home, scopeKey]);
 
   const inheritedCwdForNewTab = useCallback((): string | undefined => {
     if (activeTab?.kind === "terminal" && activeTab.cwd) return activeTab.cwd;
-    // Editor tabs inherit the last terminal's cwd (or workspace home), not
-    // the file's folder — opening a new terminal from a file shouldn't
-    // hijack the user's working directory context.
+    // Editor tabs inherit the last terminal cwd (or workspace home), not
+    // the file folder so opening a new terminal does not hijack context.
     return lastTerminalCwd.current ?? home ?? undefined;
   }, [activeTab, home]);
 

@@ -3,29 +3,53 @@ import { homeDir } from "@tauri-apps/api/path";
 import { native } from "@/modules/ai/lib/native";
 import type { Tab } from "@/modules/tabs";
 import {
+  getRemoteSshHome,
   getWslHome,
   LOCAL_WORKSPACE,
   type WorkspaceEnv,
 } from "@/modules/workspace";
 
 async function resolveEnvHome(env: WorkspaceEnv): Promise<string> {
-  return env.kind === "wsl"
-    ? getWslHome(env.distro)
-    : (await homeDir()).replace(/\\/g, "/");
+  if (env.kind === "wsl") {
+    return getWslHome(env.distro);
+  }
+  if (env.kind === "ssh") {
+    if (env.remote_path && env.remote_path !== "~") {
+      return env.remote_path;
+    }
+    try {
+      const resolved = await getRemoteSshHome(
+        env.host,
+        env.user,
+        env.port,
+        env.key_path,
+      );
+      if (resolved && resolved.trim()) {
+        return resolved.trim();
+      }
+    } catch {
+      // Fallback if probe fails
+    }
+    return env.remote_path || "/";
+  }
+  if (env.kind === "devcontainer") {
+    return env.remote_path || "/workspaces";
+  }
+  return (await homeDir()).replace(/\\/g, "/");
 }
 
 type Params = {
   tabsRef: RefObject<Tab[]>;
   workspaceEnv: WorkspaceEnv;
   setWorkspaceEnv: (env: WorkspaceEnv) => void;
-  resetWorkspace: (home?: string) => void;
+  resetWorkspace: (home?: string, blocks?: boolean) => void;
   /** Dispose live sessions and clear App-owned pane/handle ref maps. */
   clearWorkspaceState: () => void;
 };
 
 /**
  * Owns the resolved home / launch cwd. switchWorkspace runs an interactive
- * local⇄WSL switch (tears down sessions, re-authorizes home, resets tabs);
+ * local / WSL / SSH switch (tears down sessions, re-authorizes home, resets tabs);
  * adoptWorkspaceEnv applies a space's env + home on restore, without teardown.
  */
 export function useWorkspaceSwitcher({
@@ -67,7 +91,7 @@ export function useWorkspaceSwitcher({
     try {
       await native.workspaceAuthorize(nextHome);
     } catch {
-      // Non-fatal — git panel will surface "not authorized" if needed.
+      // Non-fatal git panel will surface not authorized if needed.
     }
   }, []);
 
@@ -76,7 +100,9 @@ export function useWorkspaceSwitcher({
       if (
         env.kind === workspaceEnv.kind &&
         (env.kind === "local" ||
-          (workspaceEnv.kind === "wsl" && env.distro === workspaceEnv.distro))
+          (workspaceEnv.kind === "wsl" && env.kind === "wsl" && env.distro === workspaceEnv.distro) ||
+          (workspaceEnv.kind === "ssh" && env.kind === "ssh" && env.id === workspaceEnv.id) ||
+          (workspaceEnv.kind === "devcontainer" && env.kind === "devcontainer" && env.container_id === workspaceEnv.container_id))
       ) {
         return false;
       }
@@ -99,7 +125,8 @@ export function useWorkspaceSwitcher({
       clearWorkspaceState();
       setWorkspaceEnv(env.kind === "local" ? LOCAL_WORKSPACE : env);
       await authorizeHome(nextHome);
-      resetWorkspace(nextHome);
+      const isRemote = env.kind === "ssh" || env.kind === "devcontainer";
+      resetWorkspace(nextHome, !isRemote);
       return true;
     },
     [

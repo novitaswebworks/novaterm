@@ -205,10 +205,11 @@ function coldTerminalTab(
     kind: "terminal",
     spaceId,
     cold: true,
-    title: cwd ? basename(cwd) : "shell",
+    title: cwd ? basename(cwd) : "blocks",
     cwd,
     paneTree: { kind: "leaf", id: leafId, cwd },
     activeLeafId: leafId,
+    blocks: true,
   };
 }
 
@@ -248,16 +249,18 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   const [tabs, setTabs] = useState<Tab[]>(() => {
     const tabId = 1;
     const leafId = 2;
+    const isBlock = initial?.blocks ?? true;
     return [
       {
         id: tabId,
         kind: "terminal",
         spaceId: DEFAULT_SPACE_ID,
         cold: true,
-        title: initial?.title ?? "shell",
+        title: initial?.title ?? (isBlock ? "blocks" : "shell"),
         cwd: initial?.cwd,
         paneTree: { kind: "leaf", id: leafId, cwd: initial?.cwd },
         activeLeafId: leafId,
+        blocks: isBlock,
       },
     ];
   });
@@ -313,10 +316,11 @@ export function useTabs(initial?: Partial<TerminalTab>) {
         kind: "terminal",
         spaceId,
         cold: true,
-        title: cwd ? basename(cwd) : "shell",
+        title: cwd ? basename(cwd) : "blocks",
         cwd,
         paneTree: { kind: "leaf", id: leafId, cwd },
         activeLeafId: leafId,
+        blocks: true,
       },
     ]);
     return tabId;
@@ -409,10 +413,11 @@ export function useTabs(initial?: Partial<TerminalTab>) {
         id: tabId,
         kind: "terminal",
         spaceId: activeSpaceIdRef.current,
-        title: "shell",
+        title: cwd ? basename(cwd) : "blocks",
         cwd,
         paneTree: { kind: "leaf", id: leafId, cwd },
         activeLeafId: leafId,
+        blocks: true,
       },
     ]);
     setActiveId(tabId);
@@ -428,7 +433,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
         id: tabId,
         kind: "terminal",
         spaceId: activeSpaceIdRef.current,
-        title: "blocks",
+        title: cwd ? basename(cwd) : "blocks",
         cwd,
         paneTree: { kind: "leaf", id: leafId, cwd },
         activeLeafId: leafId,
@@ -459,6 +464,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
         cwd,
         paneTree: { kind: "leaf", id: leafId, cwd },
         activeLeafId: leafId,
+        blocks: true,
       },
     ]);
     setActiveId(tabId);
@@ -478,6 +484,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
         cwd,
         paneTree: { kind: "leaf", id: leafId, cwd },
         activeLeafId: leafId,
+        blocks: true,
         private: true,
       },
     ]);
@@ -1027,7 +1034,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       let newLeafId: number | null = null;
       setTabs((curr) =>
         curr.map((t) => {
-          if (t.id !== tabId || t.kind !== "terminal" || t.blocks) return t;
+          if (t.id !== tabId || t.kind !== "terminal") return t;
           if (leafIds(t.paneTree).length >= MAX_PANES_PER_TAB) return t;
           const splitId = nextIdRef.current++;
           const leafId = nextIdRef.current++;
@@ -1111,7 +1118,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     return closedTab;
   }, []);
 
-  const resetWorkspace = useCallback((cwd?: string) => {
+  const resetWorkspace = useCallback((cwd?: string, blocks = true) => {
     const tabId = nextIdRef.current++;
     const leafId = nextIdRef.current++;
     let toDispose: number[] = [];
@@ -1124,10 +1131,11 @@ export function useTabs(initial?: Partial<TerminalTab>) {
           id: tabId,
           kind: "terminal",
           spaceId: activeSpaceIdRef.current,
-          title: "shell",
+          title: cwd ? basename(cwd) : (blocks ? "blocks" : "terminal"),
           cwd,
           paneTree: { kind: "leaf", id: leafId, cwd },
           activeLeafId: leafId,
+          blocks,
         },
       ];
     });

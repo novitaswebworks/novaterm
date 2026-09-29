@@ -98,6 +98,9 @@ export function useAiBootstrap(): {
     void hydrateSessions();
     void useAgentsStore.getState().hydrate();
     void useSnippetsStore.getState().hydrate();
+    import("@/modules/mcp/mcpStore").then(({ useMcpStore }) => {
+      void useMcpStore.getState().init();
+    });
   }, [hydrateSessions]);
 
   return { hasComposer, keysLoaded };

@@ -7,11 +7,14 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
+  ArrowUp01Icon,
   FileAddIcon,
   Folder01Icon,
   FolderAddIcon,
   Refresh01Icon,
   Search01Icon,
+  ViewIcon,
+  ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -43,6 +46,7 @@ import { useGitStatus } from "./lib/useGitStatus";
 import type { GitStatusCode } from "./lib/gitStatusUtils";
 import { useGlobalShortcuts } from "@/modules/shortcuts";
 import { usePreferencesStore } from "@/modules/settings/preferences";
+import { setShowHidden } from "@/modules/settings/store";
 import type { GitStatusSnapshot } from "@/modules/ai/lib/native";
 
 export type FileExplorerHandle = {
@@ -59,6 +63,7 @@ type Props = {
   onPathDeleted?: (path: string) => void;
   onRevealInTerminal?: (path: string) => void;
   onAttachToAgent?: (path: string) => void;
+  onNavigateRoot?: (path: string) => void;
   gitStatus?: GitStatusSnapshot | null;
 };
 
@@ -196,10 +201,12 @@ export const FileExplorer = memo(
       onPathDeleted,
       onRevealInTerminal,
       onAttachToAgent,
+      onNavigateRoot,
       gitStatus,
     },
     ref,
   ) {
+    const showHidden = usePreferencesStore((s) => s.showHidden);
     const tree = useFileTree(rootPath, { onPathRenamed, onPathDeleted });
     const gitDecorations = usePreferencesStore((s) => s.explorerGitDecorations);
     const { lookup: lookupGitStatus } = useGitStatus(
@@ -508,19 +515,50 @@ export const FileExplorer = memo(
         onKeyDown={handleKeyDown}
       >
         <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border/60 px-2">
+          {onNavigateRoot && rootPath && rootPath !== "/" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={() => onNavigateRoot(parentOf(rootPath, "/"))}
+              title={`Up to parent (${parentOf(rootPath, "/")})`}
+              aria-label="Up to parent directory"
+            >
+              <HugeiconsIcon icon={ArrowUp01Icon} size={13} strokeWidth={2} />
+            </Button>
+          )}
+
           <span
-            className="flex flex-1 items-center truncate text-xs font-medium text-foreground/80"
-            title={rootPath}
+            className="flex flex-1 items-center truncate text-xs font-medium text-foreground/80 cursor-default"
+            title={rootPath ?? ""}
           >
             <img
               src={folderIconUrl(basename(rootPath), false)}
               alt=""
               height={15}
               width={15}
-              className="mx-1.5"
+              className="mx-1.5 shrink-0"
             />
-            {basename(rootPath)}
+            <span className="truncate">{basename(rootPath) || "/"}</span>
           </span>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "size-6 text-muted-foreground hover:text-foreground",
+              showHidden && "text-primary bg-primary/10",
+            )}
+            onClick={() => void setShowHidden(!showHidden)}
+            title={showHidden ? "Hide hidden files" : "Show hidden files"}
+            aria-label={showHidden ? "Hide hidden files" : "Show hidden files"}
+          >
+            <HugeiconsIcon
+              icon={showHidden ? ViewIcon : ViewOffSlashIcon}
+              size={13}
+              strokeWidth={2}
+            />
+          </Button>
 
           <Button
             variant="ghost"
@@ -697,6 +735,14 @@ export const FileExplorer = memo(
                       onSelect={() => onRevealInTerminal(menuTarget.path)}
                     >
                       Open in Terminal
+                    </ContextMenuItem>
+                  )}
+                  {menuTarget.isDir && onNavigateRoot && (
+                    <ContextMenuItem
+                      className={COMPACT_ITEM}
+                      onSelect={() => onNavigateRoot(menuTarget.path)}
+                    >
+                      Set as Explorer Root
                     </ContextMenuItem>
                   )}
                   <ContextMenuItem

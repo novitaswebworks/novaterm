@@ -40,6 +40,7 @@ import {
   type SearchTarget,
 } from "@/modules/header";
 import { setLspNavigator } from "@/modules/lsp";
+import { PortForwardingDrawer } from "@/modules/ports";
 import type { PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
 import { usePreferencesStore } from "@/modules/settings/preferences";
@@ -299,7 +300,8 @@ export default function App() {
 
   const activeTab = tabs.find((t) => t.id === activeId);
   const isTerminalTab = activeTab?.kind === "terminal";
-  const isBlockTab = activeTerminalTab?.blocks === true;
+  const isBlockTab =
+    activeTerminalTab != null && activeTerminalTab.blocks !== false;
   const isEditorTab = activeTab?.kind === "editor";
   const isGitHistoryTab = activeTab?.kind === "git-history";
 
@@ -538,6 +540,23 @@ export default function App() {
     [newTab],
   );
 
+  const handleNavigateExplorerRoot = useCallback(
+    (newPath: string) => {
+      if (!newPath) return;
+      if (activeId !== null) {
+        updateTab(activeId, { cwd: newPath });
+        if (activeLeafId !== null) {
+          setLeafCwd(activeLeafId, newPath);
+          const t = terminalRefs.current.get(activeLeafId);
+          if (t && activeTab?.kind === "terminal") {
+            t.write(`cd ${quoteShellArg(newPath)}\r`);
+          }
+        }
+      }
+    },
+    [activeId, activeLeafId, activeTab, setLeafCwd, updateTab],
+  );
+
   const handleOpenFile = useCallback(
     (path: string, pin?: boolean) => {
       // Markdown opens in its rendered view by default; a per-tab toggle flips
@@ -764,7 +783,7 @@ export default function App() {
         id === "blocks.prev" ||
         id === "blocks.next"
       ) {
-        return !(activeTab?.kind === "terminal" && activeTab.blocks === true);
+        return !(activeTab?.kind === "terminal" && activeTab.blocks !== false);
       }
       if (id === "sidebar.toggle") {
         // Ctrl+B is also Claude Code's "run in background" key. While a terminal
@@ -857,14 +876,16 @@ export default function App() {
         (t) => t.kind === "terminal" && hasLeaf(t.paneTree, leafId),
       );
       if (tab?.kind !== "terminal") return;
-      // Last pane of the last tab: quit instead of respawning a shell.
+      // Last pane of the last tab: quit only if clean exit in local workspace.
       if (leafIds(tab.paneTree).length === 1 && all.length === 1) {
-        void getCurrentWindow().close();
+        if (_code === 0 && workspaceEnv.kind === "local") {
+          void getCurrentWindow().close();
+        }
       } else {
         closePaneByLeaf(leafId);
       }
     },
-    [closePaneByLeaf],
+    [closePaneByLeaf, workspaceEnv.kind],
   );
 
   const handleEditorDirty = useCallback(
@@ -1157,6 +1178,7 @@ export default function App() {
                         onPathDeleted={handlePathDeleted}
                         onRevealInTerminal={cdInNewTab}
                         onAttachToAgent={handleAttachFileToAgent}
+                        onNavigateRoot={handleNavigateExplorerRoot}
                       />
                     ) : (
                       <SourceControlPanel
@@ -1283,6 +1305,8 @@ export default function App() {
             rootPath={explorerRoot ?? home}
             onCreated={(path) => openFileTab(path)}
           />
+
+          <PortForwardingDrawer onOpenPreview={openPreviewTab} />
 
           <UpdaterDialog />
 

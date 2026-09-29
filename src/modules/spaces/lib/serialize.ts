@@ -74,7 +74,7 @@ function serializeTab(tab: Tab): SerializedTab | null {
       return {
         kind: "terminal",
         tree: serializeNode(tab.paneTree, tab.activeLeafId),
-        ...(tab.blocks && { blocks: true }),
+        ...(tab.blocks !== undefined && { blocks: tab.blocks }),
         ...(tab.customTitle !== undefined && { customTitle: tab.customTitle }),
       };
     case "editor":
@@ -149,9 +149,10 @@ function hydrateTab(
   switch (s.kind) {
     case "terminal": {
       const { tree, activeLeafId, firstLeafCwd } = hydrateTree(s.tree, allocId);
+      const isBlock = s.blocks !== false;
       const title =
         s.customTitle ??
-        (firstLeafCwd ? basename(firstLeafCwd) : s.blocks ? "blocks" : "shell");
+        (firstLeafCwd ? basename(firstLeafCwd) : isBlock ? "blocks" : "shell");
       return {
         id: allocId(),
         kind: "terminal",
@@ -161,7 +162,7 @@ function hydrateTab(
         cwd: firstLeafCwd,
         paneTree: tree,
         activeLeafId,
-        ...(s.blocks && { blocks: true }),
+        ...(isBlock && { blocks: true }),
         ...(s.customTitle !== undefined && { customTitle: s.customTitle }),
       } satisfies TerminalTab;
     }
@@ -210,10 +211,11 @@ export function freshTerminalTab(
     kind: "terminal",
     spaceId,
     cold: true,
-    title: cwd ? basename(cwd) : "shell",
+    title: cwd ? basename(cwd) : "blocks",
     cwd: cwd ?? undefined,
     paneTree: { kind: "leaf", id: leafId, ...(cwd && { cwd }) },
     activeLeafId: leafId,
+    blocks: true,
   };
 }
 

@@ -80,6 +80,9 @@ pub fn authorize_spawn_cwd(
     let Some(cwd) = cwd.map(str::trim).filter(|s| !s.is_empty()) else {
         return Ok(None);
     };
+    if workspace.is_ssh() || workspace.is_devcontainer() {
+        return Ok(Some(PathBuf::from(cwd)));
+    }
     let resolved = resolve_path(cwd, workspace);
     let canonical =
         std::fs::canonicalize(&resolved).map_err(|e| format!("cwd not accessible: {e}"))?;
@@ -105,6 +108,9 @@ pub fn authorize_user_spawn_cwd(
     let Some(cwd) = cwd.map(str::trim).filter(|s| !s.is_empty()) else {
         return Ok(None);
     };
+    if workspace.is_ssh() || workspace.is_devcontainer() {
+        return Ok(Some(PathBuf::from(cwd)));
+    }
     let resolved = resolve_path(cwd, workspace);
     let canonical =
         std::fs::canonicalize(&resolved).map_err(|e| format!("cwd not accessible: {e}"))?;
@@ -146,6 +152,9 @@ pub async fn workspace_authorize(
     registry: tauri::State<'_, WorkspaceRegistry>,
 ) -> Result<String, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
+    if workspace.is_ssh() || workspace.is_devcontainer() {
+        return Ok(path);
+    }
     let resolved = resolve_path(&path, &workspace);
     let canonical = registry.authorize(&resolved).map_err(|e| e.to_string())?;
     Ok(crate::modules::fs::to_canon(&canonical))
@@ -308,13 +317,32 @@ fn compute_appimage_env_overrides(
     out
 }
 
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum WorkspaceEnv {
     #[default]
     Local,
     Wsl {
         distro: String,
+    },
+    Ssh {
+        id: String,
+        label: String,
+        host: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        user: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        port: Option<u16>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        key_path: Option<String>,
+        #[serde(default)]
+        remote_path: String,
+    },
+    DevContainer {
+        container_id: String,
+        name: String,
+        #[serde(default)]
+        remote_path: String,
     },
 }
 
@@ -325,6 +353,14 @@ impl WorkspaceEnv {
 
     pub fn is_wsl(&self) -> bool {
         matches!(self, Self::Wsl { .. })
+    }
+
+    pub fn is_ssh(&self) -> bool {
+        matches!(self, Self::Ssh { .. })
+    }
+
+    pub fn is_devcontainer(&self) -> bool {
+        matches!(self, Self::DevContainer { .. })
     }
 }
 
@@ -340,6 +376,7 @@ pub fn resolve_path(path: &str, workspace: &WorkspaceEnv) -> PathBuf {
     match workspace {
         WorkspaceEnv::Local => PathBuf::from(path),
         WorkspaceEnv::Wsl { distro } => wsl_path_to_host(distro, path),
+        WorkspaceEnv::Ssh { .. } | WorkspaceEnv::DevContainer { .. } => PathBuf::from(path),
     }
 }
 

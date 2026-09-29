@@ -194,14 +194,40 @@ function Toolbar({ block, all, onSearch }: ChromeProps) {
     : fmtDuration(block.finishedAt - block.startedAt);
   const failed = !block.running && !block.ok && block.exitCode !== null;
 
-  const handleFixWithAi = () => {
+  const handleFixWithAi = async () => {
     const rawOut = all.readOutput(block.id) ?? "";
     const out = capAttachOutput(rawOut);
     const text = out
-      ? `The command failed with exit code ${block.exitCode}:\n$ ${block.command}\n\nError output:\n${out}\n\nPlease analyze what caused this error and suggest or run the fix.`
-      : `The command failed with exit code ${block.exitCode}:\n$ ${block.command}\n\nPlease analyze what caused this error and suggest or run the fix.`;
-    useChatStore.getState().attachSelection(text, "terminal");
-    toast.success("Error sent to AI Assistant");
+      ? `The command failed with exit code ${block.exitCode}:\n$ ${block.command}\n\nError output:\n${out}\n\nPlease analyze what caused this error and provide the exact fix or corrected command.`
+      : `The command failed with exit code ${block.exitCode}:\n$ ${block.command}\n\nPlease analyze what caused this error and provide the exact fix or corrected command.`;
+
+    const store = useChatStore.getState();
+    if (!store.sessionsHydrated) {
+      await store.hydrateSessions();
+    }
+    let sessionId = store.activeSessionId;
+    if (!sessionId) {
+      sessionId = store.newSession();
+    }
+
+    store.patchAgentMeta({ hitStepCap: false, compactionNotice: null });
+    if (!store.mini.open) {
+      store.openMini();
+    }
+
+    try {
+      const { getOrCreateChat } = await import("@/modules/ai/store/chatRuntime");
+      const chat = getOrCreateChat(sessionId);
+      void chat.sendMessage({
+        role: "user",
+        parts: [{ type: "text", text }],
+      } as Parameters<typeof chat.sendMessage>[0]);
+      toast.success("Fix request sent to AI Assistant");
+    } catch (e) {
+      console.error("[novaterm] Fix with AI auto-send failed:", e);
+      store.attachSelection(text, "terminal");
+      toast.error("Attached error to AI input");
+    }
   };
 
   const handleCopyOutput = () => {
