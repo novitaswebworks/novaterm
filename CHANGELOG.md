@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-09-29
+
+### Fixed
+- Fixed Debian package compatibility on Kali Linux, Ubuntu 24.04+, and Debian 13 by adding 64-bit time_t (t64) package alternatives to deb dependencies.
+
 ## [2.0.1] - 2026-09-29
 
 ### Fixed
