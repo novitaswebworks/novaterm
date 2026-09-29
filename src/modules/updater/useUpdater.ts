@@ -80,6 +80,14 @@ interface HookOptions {
 
 export function useUpdater({ autoCheck = true }: HookOptions = {}) {
   const [status, setStatus] = useState<UpdaterStatus>({ kind: "idle" });
+  const [lastChecked, setLastChecked] = useState<number | null>(() => {
+    try {
+      const raw = localStorage.getItem(LAST_CHECK_KEY);
+      return raw ? Number(raw) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const runCheck = useCallback(async ({ manual }: Options = {}) => {
     if (!manual) {
@@ -89,10 +97,12 @@ export function useUpdater({ autoCheck = true }: HookOptions = {}) {
     setStatus({ kind: "checking" });
     try {
       const info = await checkGitHubRelease();
+      const now = Date.now();
+      localStorage.setItem(LAST_CHECK_KEY, String(now));
+      setLastChecked(now);
       if (info) {
         setStatus({ kind: "manual-available", info });
       } else {
-        localStorage.setItem(LAST_CHECK_KEY, String(Date.now()));
         setStatus({ kind: "uptodate" });
       }
     } catch (err) {
@@ -101,7 +111,7 @@ export function useUpdater({ autoCheck = true }: HookOptions = {}) {
   }, []);
 
   const install = useCallback(async () => {
-    // Legacy auto-install removed since we use manual-available for all platforms
+    // Manual distribution downloads
   }, []);
 
   const dismiss = useCallback(() => {
@@ -113,5 +123,5 @@ export function useUpdater({ autoCheck = true }: HookOptions = {}) {
     void runCheck();
   }, [autoCheck, runCheck]);
 
-  return { status, check: runCheck, install, dismiss };
+  return { status, check: runCheck, install, dismiss, lastChecked };
 }
