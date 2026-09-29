@@ -105,23 +105,58 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     steps:
-      - name: Extract version
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version and release notes
         id: meta
         run: |
-          VERSION="${{ inputs.tagName || github.ref_name }}"
-          echo "VERSION=${VERSION#v}" >> "$GITHUB_OUTPUT"
+          TAG="${{ inputs.tagName || github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch release notes from GitHub API
-        id: notes
-        run: |
-          NOTES=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ inputs.tagName || github.ref_name }}" \
-            | jq -r '.body // ""')
+          NOTES=$(node -e '
+            const fs = require("fs");
+            const ver = process.argv[1];
+            try {
+              const text = fs.readFileSync("CHANGELOG.md", "utf8");
+              const lines = text.split("\n");
+              let capturing = false;
+              const out = [];
+              for (const line of lines) {
+                if (line.startsWith("## ")) {
+                  if (line.includes(ver)) {
+                    capturing = true;
+                    continue;
+                  } else if (capturing) {
+                    break;
+                  }
+                }
+                if (capturing) {
+                  out.push(line);
+                }
+              }
+              console.log(out.join("\n").trim());
+            } catch (e) {
+              console.log("");
+            }
+          ' "$VERSION")
+
+          if [ -n "$NOTES" ]; then
+            gh release edit "$TAG" --notes "$NOTES" || true
+          else
+            NOTES=$(curl -s \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" \
+              | jq -r '.body // ""')
+          fi
+
           echo "NOTES<<EOF" >> "$GITHUB_OUTPUT"
           echo "$NOTES"    >> "$GITHUB_OUTPUT"
           echo "EOF"       >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Dispatch app-released to website repo
         run: |

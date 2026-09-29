@@ -267,7 +267,7 @@ pub async fn ports_list(workspace: Option<WorkspaceEnv>) -> Result<Vec<Listening
 
         // 3. Scan DevContainer ports if active
         if let WorkspaceEnv::DevContainer { container_id, name, .. } = &env {
-            let mut cmd = Command::new("docker");
+            let mut cmd = crate::modules::remote::devcontainer::docker_command();
             cmd.args([
                 "exec",
                 container_id,
@@ -275,9 +275,6 @@ pub async fn ports_list(workspace: Option<WorkspaceEnv>) -> Result<Vec<Listening
                 "-c",
                 "ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null",
             ]);
-
-            #[cfg(windows)]
-            crate::modules::proc::hide_console(&mut cmd);
 
             if let Ok(out) = cmd.output() {
                 if out.status.success() {

@@ -134,7 +134,7 @@ pub fn build_command(
         }
         WorkspaceEnv::DevContainer { container_id, remote_path, .. } => {
             crate::modules::remote::devcontainer::validate_container_id(container_id)?;
-            let mut cmd = CommandBuilder::new("docker");
+            let mut cmd = CommandBuilder::new(crate::modules::remote::devcontainer::docker_bin_path());
             cmd.arg("exec");
             cmd.arg("-it");
             let dir = cwd.unwrap_or_else(|| remote_path.clone());

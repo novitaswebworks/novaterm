@@ -127,12 +127,41 @@ struct RawBuildObj {
     dockerfile: Option<String>,
 }
 
-fn check_docker() -> (bool, Option<String>) {
-    let mut cmd = Command::new("docker");
-    cmd.args(["version", "--format", "{{.Server.Version}}"]);
+pub fn docker_bin_path() -> PathBuf {
+    crate::modules::lsp::env::resolve_binary("docker")
+        .or_else(|| {
+            for fallback in [
+                "/usr/local/bin/docker",
+                "/opt/homebrew/bin/docker",
+                "/usr/bin/docker",
+            ] {
+                let p = PathBuf::from(fallback);
+                if p.is_file() {
+                    return Some(p);
+                }
+            }
+            if let Some(home) = dirs::home_dir() {
+                let p = home.join(".docker").join("bin").join("docker");
+                if p.is_file() {
+                    return Some(p);
+                }
+            }
+            None
+        })
+        .unwrap_or_else(|| PathBuf::from("docker"))
+}
 
+pub fn docker_command() -> Command {
+    let mut cmd = Command::new(docker_bin_path());
+    cmd.envs(crate::modules::lsp::env::server_env_overlay());
     #[cfg(windows)]
     crate::modules::proc::hide_console(&mut cmd);
+    cmd
+}
+
+fn check_docker() -> (bool, Option<String>) {
+    let mut cmd = docker_command();
+    cmd.args(["version", "--format", "{{.Server.Version}}"]);
 
     match cmd.output() {
         Ok(out) if out.status.success() => {
@@ -239,11 +268,8 @@ struct DockerPsLine {
 #[tauri::command]
 pub async fn devcontainer_list_containers() -> Result<Vec<DockerContainer>, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        let mut cmd = Command::new("docker");
+        let mut cmd = docker_command();
         cmd.args(["ps", "--format", "{{json .}}"]);
-
-        #[cfg(windows)]
-        crate::modules::proc::hide_console(&mut cmd);
 
         let out = cmd.output().map_err(|e| format!("Failed to run docker ps: {e}"))?;
         if !out.status.success() {
@@ -291,11 +317,8 @@ pub async fn devcontainer_start(
         let container_name = format!("novaterm-{}", dir_name.to_lowercase().replace(' ', "-"));
 
         // Check if container already exists
-        let mut inspect_cmd = Command::new("docker");
+        let mut inspect_cmd = docker_command();
         inspect_cmd.args(["inspect", "--format", "{{.State.Status}}", &container_name]);
-
-        #[cfg(windows)]
-        crate::modules::proc::hide_console(&mut inspect_cmd);
 
         if let Ok(out) = inspect_cmd.output() {
             if out.status.success() {
@@ -303,10 +326,8 @@ pub async fn devcontainer_start(
                 if status == "running" {
                     return Ok(container_name);
                 } else {
-                    let mut start_cmd = Command::new("docker");
+                    let mut start_cmd = docker_command();
                     start_cmd.args(["start", &container_name]);
-                    #[cfg(windows)]
-                    crate::modules::proc::hide_console(&mut start_cmd);
                     let start_out = start_cmd.output().map_err(|e| e.to_string())?;
                     if start_out.status.success() {
                         return Ok(container_name);
@@ -323,7 +344,7 @@ pub async fn devcontainer_start(
             let context_dir = df_path.parent().unwrap_or(root);
             let image_tag = format!("novaterm-img-{}:latest", dir_name.to_lowercase().replace(' ', "-"));
 
-            let mut build_cmd = Command::new("docker");
+            let mut build_cmd = docker_command();
             build_cmd.args([
                 "build",
                 "-t",
@@ -332,9 +353,6 @@ pub async fn devcontainer_start(
                 &df,
                 &context_dir.to_string_lossy(),
             ]);
-
-            #[cfg(windows)]
-            crate::modules::proc::hide_console(&mut build_cmd);
 
             let build_out = build_cmd
                 .output()
@@ -352,7 +370,7 @@ pub async fn devcontainer_start(
 
         // Run container in background mounted to /workspaces/<dir_name>
         let mount_arg = format!("{}:/workspaces/{}", workspace_path, dir_name);
-        let mut run_cmd = Command::new("docker");
+        let mut run_cmd = docker_command();
         run_cmd.args([
             "run",
             "-d",
@@ -366,9 +384,6 @@ pub async fn devcontainer_start(
             &target_image,
             "/bin/sh",
         ]);
-
-        #[cfg(windows)]
-        crate::modules::proc::hide_console(&mut run_cmd);
 
         let run_out = run_cmd
             .output()
@@ -397,11 +412,8 @@ pub fn validate_container_id(id: &str) -> Result<(), String> {
 
 pub fn docker_exec(container_id: &str, command: &str) -> Result<String, String> {
     validate_container_id(container_id)?;
-    let mut cmd = Command::new("docker");
+    let mut cmd = docker_command();
     cmd.args(["exec", "-i", container_id, "sh", "-c", command]);
-
-    #[cfg(windows)]
-    crate::modules::proc::hide_console(&mut cmd);
 
     let out = cmd.output().map_err(|e| format!("docker exec failed: {e}"))?;
     if !out.status.success() {
@@ -539,13 +551,10 @@ pub fn devcontainer_write_file(
 ) -> Result<(), String> {
     validate_container_id(container_id)?;
     use std::io::Write;
-    let mut cmd = Command::new("docker");
+    let mut cmd = docker_command();
     let shell_cmd = format!("cat > {}", shell_quote(remote_path));
     cmd.args(["exec", "-i", container_id, "sh", "-c", &shell_cmd]);
     cmd.stdin(std::process::Stdio::piped());
-
-    #[cfg(windows)]
-    crate::modules::proc::hide_console(&mut cmd);
 
     let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn docker write: {e}"))?;
     if let Some(mut stdin) = child.stdin.take() {

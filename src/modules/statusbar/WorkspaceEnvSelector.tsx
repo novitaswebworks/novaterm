@@ -172,10 +172,17 @@ export function WorkspaceEnvSelector({ onSelect, cwd }: Props) {
     toast("SSH profile removed");
   };
 
+  const [dockerLoading, setDockerLoading] = useState(false);
+
   const handleOpenDockerAttach = async () => {
-    const list = await listDockerContainers();
-    setDockerContainers(list);
     setIsDockerDialogOpen(true);
+    setDockerLoading(true);
+    try {
+      const list = await listDockerContainers();
+      setDockerContainers(list);
+    } finally {
+      setDockerLoading(false);
+    }
   };
 
   const handleAttachContainer = (c: DockerContainer) => {
@@ -471,16 +478,46 @@ export function WorkspaceEnvSelector({ onSelect, cwd }: Props) {
       <Dialog open={isDockerDialogOpen} onOpenChange={setIsDockerDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-sm font-semibold">
-              Attach to Docker Container
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              Select a running Docker container to attach terminal and workspace.
-            </DialogDescription>
+            <div className="flex items-center justify-between pr-4">
+              <div>
+                <DialogTitle className="text-sm font-semibold">
+                  Attach to Docker Container
+                </DialogTitle>
+                <DialogDescription className="text-xs">
+                  Select a running Docker container to attach terminal and workspace.
+                </DialogDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                disabled={dockerLoading}
+                onClick={async () => {
+                  setDockerLoading(true);
+                  try {
+                    const list = await listDockerContainers();
+                    setDockerContainers(list);
+                  } finally {
+                    setDockerLoading(false);
+                  }
+                }}
+                title="Refresh containers"
+              >
+                <HugeiconsIcon
+                  icon={Refresh01Icon}
+                  size={13}
+                  className={dockerLoading ? "animate-spin" : ""}
+                />
+              </Button>
+            </div>
           </DialogHeader>
 
           <div className="max-h-72 overflow-y-auto py-2 space-y-1.5">
-            {dockerContainers.length === 0 ? (
+            {dockerLoading ? (
+              <div className="rounded-md border border-dashed border-border/80 p-6 text-center text-xs text-muted-foreground">
+                Scanning running Docker containers...
+              </div>
+            ) : dockerContainers.length === 0 ? (
               <div className="rounded-md border border-dashed border-border/80 p-6 text-center text-xs text-muted-foreground">
                 No running Docker containers found. Ensure Docker daemon is running.
               </div>
