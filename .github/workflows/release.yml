@@ -96,6 +96,7 @@ jobs:
 
       - name: Build and Publish to Chocolatey (Windows Only)
         if: matrix.platform == 'windows-latest'
+        continue-on-error: true
         env:
           CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
         run: |
@@ -113,7 +114,7 @@ jobs:
           
           if [ ! -z "$CHOCO_API_KEY" ]; then
             NUPKG_FILE=$(find . -name "*.nupkg" | head -n 1)
-            choco push "$NUPKG_FILE" -k "$CHOCO_API_KEY" -s https://push.chocolatey.org/
+            choco push "$NUPKG_FILE" -k "$CHOCO_API_KEY" -s https://push.chocolatey.org/ || echo "Warning: choco push failed (package may be in moderation or key lacks permission)"
           else
             echo "Skipping choco push - CHOCO_API_KEY not set"
           fi
