@@ -91,7 +91,7 @@ jobs:
           installers-regex: '\.msi$'
           token: ${{ secrets.WINGET_TOKEN }}
           fork-user: novitaswebworks
-          release-repository: novaterm
+          release-repository: ${{ github.repository }}
           release-tag: ${{ inputs.tagName || github.ref_name }}
 
   # ─────────────────────────────────────────────────────────────────────────
