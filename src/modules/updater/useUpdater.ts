@@ -1,6 +1,8 @@
 import { getVersion } from "@tauri-apps/api/app";
+import { check as checkForUpdate } from "@tauri-apps/plugin-updater";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { UPDATE_INSTALLED_EVENT } from "./restart";
 
 const LAST_CHECK_KEY = "novaterm:updater:last-check";
 const CHECK_INTERVAL_MS = 30 * 60 * 1000;
@@ -79,7 +81,12 @@ interface HookOptions {
 }
 
 export function useUpdater({ autoCheck = true }: HookOptions = {}) {
-  const [status, setStatus] = useState<UpdaterStatus>({ kind: "idle" });
+  const [status, setStatusState] = useState<UpdaterStatus>({ kind: "idle" });
+  const lastInfo = useRef<ManualUpdateInfo | null>(null);
+  const setStatus = useCallback((next: UpdaterStatus) => {
+    if (next.kind === "manual-available") lastInfo.current = next.info;
+    setStatusState(next);
+  }, []);
   const [lastChecked, setLastChecked] = useState<number | null>(() => {
     try {
       const raw = localStorage.getItem(LAST_CHECK_KEY);
@@ -89,39 +96,70 @@ export function useUpdater({ autoCheck = true }: HookOptions = {}) {
     }
   });
 
-  const runCheck = useCallback(async ({ manual }: Options = {}) => {
-    if (!manual) {
-      const last = Number(localStorage.getItem(LAST_CHECK_KEY) ?? 0);
-      if (Date.now() - last < CHECK_INTERVAL_MS) return;
-    }
-    setStatus({ kind: "checking" });
-    try {
-      const info = await checkGitHubRelease();
-      const now = Date.now();
-      localStorage.setItem(LAST_CHECK_KEY, String(now));
-      setLastChecked(now);
-      if (info) {
-        setStatus({ kind: "manual-available", info });
-      } else {
-        setStatus({ kind: "uptodate" });
+  const runCheck = useCallback(
+    async ({ manual }: Options = {}) => {
+      if (!manual) {
+        const last = Number(localStorage.getItem(LAST_CHECK_KEY) ?? 0);
+        if (Date.now() - last < CHECK_INTERVAL_MS) return;
       }
+      setStatus({ kind: "checking" });
+      try {
+        const info = await checkGitHubRelease();
+        const now = Date.now();
+        localStorage.setItem(LAST_CHECK_KEY, String(now));
+        setLastChecked(now);
+        if (info) {
+          setStatus({ kind: "manual-available", info });
+        } else {
+          setStatus({ kind: "uptodate" });
+        }
+      } catch (err) {
+        setStatus({ kind: "error", message: String(err) });
+      }
+    },
+    [setStatus],
+  );
+
+  const install = useCallback(async () => {
+    try {
+      const update = await checkForUpdate();
+      if (!update) {
+        setStatus({ kind: "uptodate" });
+        return;
+      }
+      let downloaded = 0;
+      let contentLength: number | null = null;
+      setStatus({ kind: "downloading", downloaded, contentLength });
+      await update.downloadAndInstall((event) => {
+        if (event.event === "Started") {
+          contentLength = event.data.contentLength ?? null;
+        } else if (event.event === "Progress") {
+          downloaded += event.data.chunkLength;
+        }
+        setStatus({ kind: "downloading", downloaded, contentLength });
+      });
+      setStatus({ kind: "ready" });
+      window.dispatchEvent(new Event(UPDATE_INSTALLED_EVENT));
     } catch (err) {
       setStatus({ kind: "error", message: String(err) });
     }
-  }, []);
-
-  const install = useCallback(async () => {
-    // Manual distribution downloads
-  }, []);
+  }, [setStatus]);
 
   const dismiss = useCallback(() => {
     setStatus({ kind: "idle" });
-  }, []);
+  }, [setStatus]);
 
   useEffect(() => {
     if (!autoCheck) return;
     void runCheck();
   }, [autoCheck, runCheck]);
 
-  return { status, check: runCheck, install, dismiss, lastChecked };
+  return {
+    status,
+    check: runCheck,
+    install,
+    dismiss,
+    lastChecked,
+    lastInfo: lastInfo.current,
+  };
 }

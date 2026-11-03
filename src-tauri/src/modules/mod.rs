@@ -1,4 +1,5 @@
 pub mod agent;
+pub mod app_update;
 pub mod fs;
 pub mod git;
 pub mod history;

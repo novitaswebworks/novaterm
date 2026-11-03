@@ -1,6 +1,6 @@
 pub mod modules;
 
-use modules::{agent, fs, git, history, mcp, net, pty, remote, secrets, shell, workspace};
+use modules::{agent, app_update, fs, git, history, mcp, net, pty, remote, secrets, shell, workspace};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 #[cfg(target_os = "macos")]
@@ -216,6 +216,7 @@ pub fn run() {
             }
             Ok(())
         })
+        .manage(app_update::AppUpdateWatch::capture())
         .manage(pty::PtyState::default())
         .manage(shell::ShellState::default())
         .manage(secrets::SecretsState::default())
@@ -305,6 +306,8 @@ pub fn run() {
             net::lm_ping,
             net::ai_http_request,
             net::ai_http_stream,
+            app_update::app_updated_on_disk,
+            app_update::relaunch_app,
             history::history_suggest,
             history::history_commands,
             history::history_record,

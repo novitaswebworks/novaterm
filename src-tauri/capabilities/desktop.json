@@ -12,6 +12,7 @@
   "permissions": [
     "autostart:default",
     "window-state:default",
-    "process:default"
+    "process:default",
+    "updater:default"
   ]
 }
