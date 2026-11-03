@@ -187,7 +187,12 @@ export default function ShellInput({
 
   useEffect(() => {
     void themeKey;
-    handleRef.current?.retheme(fontFamily, fontSize);
+    // Defer a frame: the provider writes the new CSS variables in a parent
+    // effect that runs after this one, so reading them now gives stale colors.
+    const id = requestAnimationFrame(() =>
+      handleRef.current?.retheme(fontFamily, fontSize),
+    );
+    return () => cancelAnimationFrame(id);
   }, [fontFamily, fontSize, themeKey]);
 
   useEffect(() => {
