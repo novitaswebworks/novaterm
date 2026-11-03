@@ -9,21 +9,48 @@ use std::sync::OnceLock;
 #[cfg(unix)]
 const CAPTURE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 
-/// Only toolchain-location variables from the login shell, never credentials:
-/// the overlay is handed to MCP servers and other third-party processes.
-/// Empty on Windows (full user env is inherited there) or if capture failed.
+/// Login-shell variables that are safe to hand to third-party processes:
+/// toolchain locations only, never credentials. Empty on Windows (the process
+/// env is already the user env there) or if capture failed.
 pub fn server_env_overlay() -> &'static HashMap<String, String> {
     static ENV: OnceLock<HashMap<String, String>> = OnceLock::new();
+    ENV.get_or_init(|| filter_env(login_env_raw().clone()))
+}
+
+/// Overlay for the docker CLI itself, which legitimately needs its own
+/// connection settings. Never given to MCP servers or other user code.
+pub fn docker_env_overlay() -> &'static HashMap<String, String> {
+    static ENV: OnceLock<HashMap<String, String>> = OnceLock::new();
     ENV.get_or_init(|| {
+        let mut env = server_env_overlay().clone();
+        for (k, v) in login_env_raw() {
+            if DOCKER_CLIENT_VARS.contains(&k.as_str()) {
+                env.insert(k.clone(), v.clone());
+            }
+        }
+        env
+    })
+}
+
+/// Complete environment for an untrusted child (an MCP server): the process
+/// env reduced to the same allowlist, with the login-shell overlay on top.
+/// Callers must `env_clear()` first, then apply this, then the server's own
+/// configured variables.
+pub fn sanitized_child_env() -> HashMap<String, String> {
+    let mut env = filter_env(std::env::vars().collect());
+    env.extend(server_env_overlay().clone());
+    env
+}
+
+fn login_env_raw() -> &'static HashMap<String, String> {
+    static RAW: OnceLock<HashMap<String, String>> = OnceLock::new();
+    RAW.get_or_init(|| {
         #[cfg(unix)]
         {
-            match capture_login_env() {
-                Some(env) => filter_overlay(env),
-                None => {
-                    log::warn!("proc_env: login shell env capture failed, using process env");
-                    HashMap::new()
-                }
-            }
+            capture_login_env().unwrap_or_else(|| {
+                log::warn!("proc_env: login shell env capture failed, using process env");
+                HashMap::new()
+            })
         }
         #[cfg(windows)]
         {
@@ -45,14 +72,25 @@ pub fn resolve_binary(command: &str) -> Option<PathBuf> {
     which::which_in(command, path, cwd).ok()
 }
 
-#[cfg(unix)]
-const OVERLAY_EXACT: &[&str] = &[
+const DOCKER_CLIENT_VARS: &[&str] = &[
+    "DOCKER_HOST",
+    "DOCKER_CONTEXT",
+    "DOCKER_CONFIG",
+    "DOCKER_TLS_VERIFY",
+    "DOCKER_CERT_PATH",
+];
+
+const SAFE_EXACT: &[&str] = &[
     "PATH",
+    "HOME",
     "SHELL",
     "USER",
     "LOGNAME",
     "LANG",
+    "TERM",
     "TMPDIR",
+    "TMP",
+    "TEMP",
     "CARGO_HOME",
     "RUSTUP_HOME",
     "GOPATH",
@@ -69,10 +107,27 @@ const OVERLAY_EXACT: &[&str] = &[
     "PYENV_ROOT",
     "RBENV_ROOT",
     "SDKMAN_DIR",
+    // Windows basics a child needs to start at all.
+    "PATHEXT",
+    "SYSTEMROOT",
+    "SYSTEMDRIVE",
+    "WINDIR",
+    "COMSPEC",
+    "USERPROFILE",
+    "USERNAME",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "PROGRAMDATA",
+    "PROGRAMFILES",
+    "PROGRAMFILES(X86)",
+    "HOMEDRIVE",
+    "HOMEPATH",
+    "OS",
+    "NUMBER_OF_PROCESSORS",
+    "PROCESSOR_ARCHITECTURE",
 ];
 
-#[cfg(unix)]
-const OVERLAY_PREFIXES: &[&str] = &[
+const SAFE_PREFIXES: &[&str] = &[
     "LC_",
     "XDG_",
     "NVM_",
@@ -80,11 +135,9 @@ const OVERLAY_PREFIXES: &[&str] = &[
     "VOLTA_",
     "ASDF_",
     "MISE_",
-    "DOCKER_",
     "HOMEBREW_",
 ];
 
-#[cfg(unix)]
 const SECRET_MARKERS: &[&str] = &[
     "TOKEN",
     "SECRET",
@@ -97,20 +150,16 @@ const SECRET_MARKERS: &[&str] = &[
     "SESSION",
 ];
 
-#[cfg(unix)]
-fn is_safe_overlay_var(name: &str) -> bool {
+fn is_safe_var(name: &str) -> bool {
     let upper = name.to_ascii_uppercase();
     if SECRET_MARKERS.iter().any(|m| upper.contains(m)) {
         return false;
     }
-    OVERLAY_EXACT.contains(&name) || OVERLAY_PREFIXES.iter().any(|p| name.starts_with(p))
+    SAFE_EXACT.contains(&upper.as_str()) || SAFE_PREFIXES.iter().any(|p| upper.starts_with(p))
 }
 
-#[cfg(unix)]
-fn filter_overlay(env: HashMap<String, String>) -> HashMap<String, String> {
-    env.into_iter()
-        .filter(|(k, _)| is_safe_overlay_var(k))
-        .collect()
+fn filter_env(env: HashMap<String, String>) -> HashMap<String, String> {
+    env.into_iter().filter(|(k, _)| is_safe_var(k)).collect()
 }
 
 #[cfg(unix)]
@@ -181,26 +230,56 @@ mod tests {
         assert!(p.is_absolute());
     }
 
+    fn map(pairs: &[(&str, &str)]) -> HashMap<String, String> {
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
+    }
+
     #[test]
-    fn overlay_keeps_toolchain_vars_and_drops_credentials() {
-        let env: HashMap<String, String> = [
+    fn filter_keeps_toolchain_vars_and_drops_credentials() {
+        let env = map(&[
             ("PATH", "/usr/bin"),
             ("NVM_DIR", "/home/u/.nvm"),
             ("LC_ALL", "C"),
             ("DOCKER_HOST", "unix:///sock"),
+            ("DOCKER_CONFIG", "/home/u/.docker"),
             ("GITHUB_TOKEN", "ghp_x"),
             ("AWS_SECRET_ACCESS_KEY", "x"),
             ("OPENAI_API_KEY", "x"),
             ("DOCKER_AUTH_CONFIG", "{}"),
             ("HOMEBREW_GITHUB_API_TOKEN", "x"),
             ("DATABASE_URL", "postgres://u:p@h/db"),
-        ]
-        .into_iter()
-        .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect();
-        let mut kept: Vec<String> = filter_overlay(env).into_keys().collect();
+        ]);
+        let mut kept: Vec<String> = filter_env(env).into_keys().collect();
         kept.sort();
-        assert_eq!(kept, ["DOCKER_HOST", "LC_ALL", "NVM_DIR", "PATH"]);
+        assert_eq!(kept, ["LC_ALL", "NVM_DIR", "PATH"]);
+    }
+
+    #[test]
+    fn filter_is_case_insensitive_for_windows_style_names() {
+        let env = map(&[
+            ("Path", "C:\\bin"),
+            ("SystemRoot", "C:\\Windows"),
+            ("Api_Key", "x"),
+        ]);
+        let mut kept: Vec<String> = filter_env(env).into_keys().collect();
+        kept.sort();
+        assert_eq!(kept, ["Path", "SystemRoot"]);
+    }
+
+    #[test]
+    fn child_env_never_contains_process_credentials() {
+        // SAFETY: test-only; unique variable names avoid cross-test races.
+        unsafe {
+            std::env::set_var("NOVATERM_TEST_SECRET_TOKEN", "leak");
+            std::env::set_var("NOVATERM_TEST_PLAIN", "leak");
+        }
+        let env = sanitized_child_env();
+        assert!(!env.contains_key("NOVATERM_TEST_SECRET_TOKEN"));
+        assert!(!env.contains_key("NOVATERM_TEST_PLAIN"));
+        assert!(env.contains_key("PATH"));
     }
 
     #[test]

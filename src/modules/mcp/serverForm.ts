@@ -1,4 +1,8 @@
-export function splitArgs(input: string): string[] {
+export type ArgsParse =
+  | { ok: true; args: string[] }
+  | { ok: false; error: string };
+
+export function parseArgs(input: string): ArgsParse {
   const args: string[] = [];
   let cur = "";
   let quote: '"' | "'" | null = null;
@@ -23,8 +27,11 @@ export function splitArgs(input: string): string[] {
       started = true;
     }
   }
+  if (quote) {
+    return { ok: false, error: "Arguments have an unclosed quote." };
+  }
   if (started || cur) args.push(cur);
-  return args;
+  return { ok: true, args };
 }
 
 export function formatArgs(args: readonly string[]): string {
@@ -71,10 +78,21 @@ export function parseEnv(input: string): EnvParse {
     return { ok: true, env };
   }
 
+  if (text.startsWith("[")) {
+    return { ok: false, error: "Environment must be a JSON object." };
+  }
+
   const env: Record<string, string> = {};
   for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
     const eq = line.indexOf("=");
-    if (eq > 0) env[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
+    if (eq <= 0) {
+      return {
+        ok: false,
+        error: `Environment line "${line.trim()}" must look like KEY=VALUE.`,
+      };
+    }
+    env[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
   }
   return { ok: true, env };
 }

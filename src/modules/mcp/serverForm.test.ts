@@ -3,28 +3,35 @@ import {
   formatArgs,
   normalizeServerId,
   parseEnv,
-  splitArgs,
+  parseArgs,
 } from "./serverForm";
 
-describe("splitArgs", () => {
+describe("parseArgs", () => {
   it("splits on whitespace", () => {
-    expect(splitArgs("-y  pkg  --flag")).toEqual(["-y", "pkg", "--flag"]);
+    expect(parseArgs("-y  pkg  --flag")).toEqual({
+      ok: true,
+      args: ["-y", "pkg", "--flag"],
+    });
   });
 
   it("keeps quoted arguments with spaces together", () => {
-    expect(splitArgs("--dir \"/my path/x\" 'a b'")).toEqual([
-      "--dir",
-      "/my path/x",
-      "a b",
-    ]);
+    expect(parseArgs("--dir \"/my path/x\" 'a b'")).toEqual({
+      ok: true,
+      args: ["--dir", "/my path/x", "a b"],
+    });
   });
 
   it("keeps an explicitly empty quoted argument", () => {
-    expect(splitArgs('a "" b')).toEqual(["a", "", "b"]);
+    expect(parseArgs('a "" b')).toEqual({ ok: true, args: ["a", "", "b"] });
+  });
+
+  it("rejects an unclosed quote instead of guessing", () => {
+    expect(parseArgs('--name "my value').ok).toBe(false);
+    expect(parseArgs("it's").ok).toBe(false);
   });
 
   it("returns nothing for blank input", () => {
-    expect(splitArgs("   ")).toEqual([]);
+    expect(parseArgs("   ")).toEqual({ ok: true, args: [] });
   });
 });
 
@@ -34,8 +41,8 @@ describe("formatArgs", () => {
     [["--dir", "/my path/x"]],
     [["a b", "", "it's"]],
     [['say "hi" now']],
-  ])("round-trips through splitArgs: %j", (args) => {
-    expect(splitArgs(formatArgs(args))).toEqual(args);
+  ])("round-trips through parseArgs: %j", (args) => {
+    expect(parseArgs(formatArgs(args))).toEqual({ ok: true, args });
   });
 });
 
@@ -58,6 +65,15 @@ describe("parseEnv", () => {
 
   it("rejects malformed JSON instead of reading it as lines", () => {
     expect(parseEnv('{"A": ').ok).toBe(false);
+  });
+
+  it("rejects JSON arrays so saving cannot silently erase variables", () => {
+    expect(parseEnv("[]").ok).toBe(false);
+    expect(parseEnv('[{"A":"b"}]').ok).toBe(false);
+  });
+
+  it("rejects lines that are not KEY=VALUE", () => {
+    expect(parseEnv("A=1\noops").ok).toBe(false);
   });
 
   it("parses KEY=VALUE lines", () => {

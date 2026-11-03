@@ -1,4 +1,4 @@
-import { formatArgs, parseEnv, splitArgs } from "@/modules/mcp/serverForm";
+import { formatArgs, parseEnv, parseArgs } from "@/modules/mcp/serverForm";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -49,7 +49,12 @@ export function EditMcpDialog({
       return;
     }
     setError(null);
-    const args = splitArgs(argsStr);
+    const parsedArgs = parseArgs(argsStr);
+    if (!parsedArgs.ok) {
+      setError(parsedArgs.error);
+      return;
+    }
+    const args = parsedArgs.args;
 
     await onSave({
       name: name.trim(),

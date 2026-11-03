@@ -153,7 +153,7 @@ pub fn docker_bin_path() -> PathBuf {
 
 pub fn docker_command() -> Command {
     let mut cmd = Command::new(docker_bin_path());
-    cmd.envs(crate::modules::proc_env::server_env_overlay());
+    cmd.envs(crate::modules::proc_env::docker_env_overlay());
     #[cfg(windows)]
     crate::modules::proc::hide_console(&mut cmd);
     cmd

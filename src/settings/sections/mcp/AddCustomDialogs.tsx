@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import {
   normalizeServerId,
   parseEnv,
-  splitArgs,
+  parseArgs,
 } from "@/modules/mcp/serverForm";
 import type { McpRegistrySource, McpServerConfig } from "@/modules/mcp/types";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
@@ -51,7 +51,12 @@ export function AddCustomMcpDialog({
       return;
     }
     setError(null);
-    const args = splitArgs(argsStr);
+    const parsedArgs = parseArgs(argsStr);
+    if (!parsedArgs.ok) {
+      setError(parsedArgs.error);
+      return;
+    }
+    const args = parsedArgs.args;
 
     await onAdd({
       id: normalizedId,
