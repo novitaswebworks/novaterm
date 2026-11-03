@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-03
+
+### Removed
+- Language server (LSP) support, including the editor status pill, the Settings group and format on save. NovaTerm is now terminal-first.
+- The git history graph tab and its entry points. Use the Source Control panel for working-tree changes.
+
+### Changed
+- MCP servers now start with an empty environment plus a small allowlist of toolchain variables (such as `PATH`). A server that relied on a variable from your shell profile or the app environment must have it set in its own configuration.
+
+### Fixed
+- Adding or editing an MCP server now validates its environment and arguments: numeric environment values are accepted, malformed JSON, arrays and unclosed quotes are rejected, duplicate identifiers are refused, and arguments containing spaces are preserved.
+- Shell autocomplete now works with named OpenAI-compatible endpoints, and deleting the endpoint selected for autocomplete resets the selection.
+
+### Security
+- Credentials held by the app process or the login shell are no longer passed to MCP servers.
+
 ## [2.1.0] - 2026-11-03
 
 ### Added
