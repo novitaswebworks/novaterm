@@ -152,9 +152,11 @@ jobs:
               | jq -r '.body // ""')
           fi
 
-          echo "NOTES<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$NOTES"    >> "$GITHUB_OUTPUT"
-          echo "EOF"       >> "$GITHUB_OUTPUT"
+          {
+            echo "NOTES<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

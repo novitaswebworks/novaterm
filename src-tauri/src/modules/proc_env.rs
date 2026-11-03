@@ -18,7 +18,7 @@ pub fn server_env_overlay() -> &'static HashMap<String, String> {
             match capture_login_env() {
                 Some(env) => env,
                 None => {
-                    log::warn!("lsp: login shell env capture failed, using process env");
+                    log::warn!("proc_env: login shell env capture failed, using process env");
                     HashMap::new()
                 }
             }
@@ -62,7 +62,7 @@ fn capture_login_env() -> Option<HashMap<String, String>> {
     let mut stdout = child.take_stdout()?;
     let (tx, rx) = mpsc::channel();
     std::thread::Builder::new()
-        .name("novaterm-lsp-env-capture".into())
+        .name("novaterm-proc-env-capture".into())
         .spawn(move || {
             let mut buf = Vec::with_capacity(8 * 1024);
             let _ = stdout.read_to_end(&mut buf);
@@ -76,7 +76,7 @@ fn capture_login_env() -> Option<HashMap<String, String>> {
             b
         }
         Err(_) => {
-            log::warn!("lsp: login shell env capture timed out after {CAPTURE_TIMEOUT:?}");
+            log::warn!("proc_env: login shell env capture timed out after {CAPTURE_TIMEOUT:?}");
             let _ = child.kill();
             let _ = child.wait();
             return None;

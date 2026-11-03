@@ -237,27 +237,6 @@ const chrome = EditorView.theme({
   },
   ".cm-lint-marker": { display: "none" },
 
-  ".cm-lsp-rename-panel": {
-    display: "flex",
-    gap: "6px",
-    padding: "6px 8px",
-    backgroundColor: "var(--popover)",
-    borderTop: "1px solid var(--border)",
-  },
-  ".cm-lsp-rename-input": {
-    flex: "1",
-    fontFamily: detectMonoFontFamily(),
-    fontSize: "12px",
-    backgroundColor: "color-mix(in srgb, var(--muted) 50%, transparent)",
-    color: "var(--foreground)",
-    border: "1px solid var(--border)",
-    borderRadius: "6px",
-    padding: "3px 8px",
-    outline: "none",
-    "&:focus": {
-      borderColor: "color-mix(in srgb, var(--ring) 60%, var(--border))",
-    },
-  },
 
   ".cm-tooltip ::-webkit-scrollbar": { width: "8px", height: "8px" },
   ".cm-tooltip ::-webkit-scrollbar-thumb": {

@@ -43,7 +43,6 @@ export type CommandPaletteActionContext = {
   openNewPrivate: () => void;
   openNewEditor: () => void;
   openNewPreview: () => void;
-  openGitGraph: () => void;
   toggleSourceControl: () => void;
   closeActiveTabOrPane: () => void;
   splitPaneRight: () => void;
@@ -214,14 +213,6 @@ export function createCommandItems(
       shortcutId: "pane.splitDown",
       disabledReason: splitDisabled,
       run: ctx.splitPaneDown,
-    },
-    {
-      id: "git.graph",
-      title: "Open git graph",
-      group: "Git",
-      keywords: ["git", "graph", "history", "log", "commits"],
-      icon: SourceCodeIcon,
-      run: ctx.openGitGraph,
     },
     {
       id: "git.source",

@@ -23,7 +23,6 @@ import {
   setDefaultWorkspaceEnv,
   setEditorAutoSave,
   setEditorAutoSaveDelay,
-  setEditorFormatOnSave,
   setEditorWordWrap,
   setExplorerGitDecorations,
   setRestoreWindowState,
@@ -51,7 +50,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { useEffect, useState } from "react";
-import { LspServersGroup } from "../components/LspServersGroup";
 import { SectionHeader } from "../components/SectionHeader";
 import { SettingRow } from "../components/SettingRow";
 
@@ -91,7 +89,6 @@ export function GeneralSection() {
   const editorWordWrap = usePreferencesStore((s) => s.editorWordWrap);
   const editorAutoSave = usePreferencesStore((s) => s.editorAutoSave);
   const editorAutoSaveDelay = usePreferencesStore((s) => s.editorAutoSaveDelay);
-  const editorFormatOnSave = usePreferencesStore((s) => s.editorFormatOnSave);
   const showHidden = usePreferencesStore((s) => s.showHidden);
   const explorerGitDecorations = usePreferencesStore(
     (s) => s.explorerGitDecorations,
@@ -234,18 +231,8 @@ export function GeneralSection() {
             onChange={(v) => void setEditorAutoSaveDelay(v)}
           />
         )}
-        <SettingRow
-          title="Format on save"
-          description="Format through the language server before an explicit save. Requires an active LSP for the file."
-        >
-          <Switch
-            checked={editorFormatOnSave}
-            onCheckedChange={(v) => void setEditorFormatOnSave(v)}
-          />
-        </SettingRow>
       </div>
 
-      <LspServersGroup />
 
       <div className="flex flex-col gap-2">
         <Label>Explorer</Label>

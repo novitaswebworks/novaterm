@@ -75,12 +75,12 @@ impl McpSession {
         F: FnOnce(Arc<Self>),
         C: FnOnce() + Send + 'static,
     {
-        let binary_path = crate::modules::lsp::env::resolve_binary(command)
+        let binary_path = crate::modules::proc_env::resolve_binary(command)
             .unwrap_or_else(|| std::path::PathBuf::from(command));
 
         let mut cmd = Command::new(&binary_path);
         cmd.args(args)
-            .envs(crate::modules::lsp::env::server_env_overlay())
+            .envs(crate::modules::proc_env::server_env_overlay())
             .envs(extra_env)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

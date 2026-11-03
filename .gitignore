@@ -39,3 +39,6 @@ NOVATERM.md
 # Analysis and reports
 *-report.json
 coverage/
+
+# Local agent tooling
+.claude-flow/
