@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-11-03
+
+### Added
+- Claude Fable 5.1, Claude Opus 5.5, Claude Sonnet 5.5 and Claude Haiku 5.5 are now available in the AI model picker.
+
+### Changed
+- Updated AI SDK to v7 and all AI provider packages to their latest major versions.
+- Updated Tauri plugins and the Rust dependency tree to their latest compatible releases.
+- Updated build and test tooling, including TypeScript 7, Vitest 5 and Babel 8.
+
+### Security
+- Resolved all fixable npm dependency advisories, including critical issues in `dompurify` and `proxy-addr`, and high-severity issues in `vite`, `undici` and `zod`.
+
 ## [2.0.2] - 2026-09-29
 
 ### Fixed
