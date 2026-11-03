@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-11-03
+
+### Added
+- NovaTerm now restarts into the new version after it is updated by Homebrew, winget, a package upgrade or an AppImage swap. If no terminal is running a command it restarts on its own after a short notice; otherwise it asks first and never stops a running command without a click.
+- "Update and restart" in the update dialog now downloads, verifies and installs the update inside the app, with a progress bar, and restarts when it is done. If the install fails you can try again or open the release notes.
+
 ## [2.2.1] - 2026-11-03
 
 ### Fixed

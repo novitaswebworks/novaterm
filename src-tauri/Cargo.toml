@@ -1,6 +1,6 @@
 [package]
 name = "novaterm"
-version = "2.2.1"
+version = "2.3.0"
 description = "NovaTerm: an open-source AI-native terminal emulator"
 authors = ["my-org"]
 license = "Apache-2.0"
