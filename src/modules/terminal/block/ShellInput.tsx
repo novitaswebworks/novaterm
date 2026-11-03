@@ -1,3 +1,4 @@
+import { resolveAutocompleteTarget } from "@/modules/ai/autocompleteTarget";
 import { resolveFontFamily } from "@/lib/fonts";
 import { fmtShortcut, MOD_KEY } from "@/lib/platform";
 import { cn } from "@/lib/utils";
@@ -17,7 +18,7 @@ import {
   historyRecord,
   historySuggest,
 } from "./lib/history";
-import { getKey } from "@/modules/ai/lib/keyring";
+import { getCustomEndpointKey, getKey } from "@/modules/ai/lib/keyring";
 import { requestCompletion } from "@/modules/editor/lib/autocomplete/provider";
 import type { BlockMode } from "./lib/modeMachine";
 import { createShellEditor, type ShellEditorHandle } from "./lib/shellEditor";
@@ -70,13 +71,9 @@ export default function ShellInput({
   const autocompleteProvider = usePreferencesStore(
     (p) => p.autocompleteProvider,
   );
-  const autocompleteModelId = usePreferencesStore((p) => p.autocompleteModelId);
   const lmstudioBaseURL = usePreferencesStore((p) => p.lmstudioBaseURL);
   const mlxBaseURL = usePreferencesStore((p) => p.mlxBaseURL);
   const ollamaBaseURL = usePreferencesStore((p) => p.ollamaBaseURL);
-  const openaiCompatibleBaseURL = usePreferencesStore(
-    (p) => p.openaiCompatibleBaseURL,
-  );
   const fontFamily = resolveFontFamily(fontFamilyPref);
   const fontRef = useRef({ fontFamily, fontSize });
   fontRef.current = { fontFamily, fontSize };
@@ -111,14 +108,21 @@ export default function ShellInput({
           await new Promise((r) => setTimeout(r, 200));
           if (ac.signal.aborted) return null;
 
-          const apiKey = await getKey(autocompleteProvider);
+          const prefs = usePreferencesStore.getState();
+          const target = resolveAutocompleteTarget(prefs);
+          const apiKey =
+            autocompleteProvider === "openai-compatible"
+              ? target.endpointId
+                ? await getCustomEndpointKey(target.endpointId)
+                : null
+              : await getKey(autocompleteProvider);
           const deps = {
             provider: autocompleteProvider,
-            modelId: autocompleteModelId,
+            modelId: target.modelId,
             lmstudioBaseURL,
             mlxBaseURL,
             ollamaBaseURL,
-            openaiCompatibleBaseURL,
+            openaiCompatibleBaseURL: target.openaiCompatibleBaseURL,
             apiKey,
           };
 
@@ -154,7 +158,13 @@ export default function ShellInput({
       handle.destroy();
       handleRef.current = null;
     };
-  }, [openaiCompatibleBaseURL, mlxBaseURL, autocompleteModelId, ollamaBaseURL, lmstudioBaseURL, autocompleteProvider, autocompleteEnabled]);
+  }, [
+    mlxBaseURL,
+    ollamaBaseURL,
+    lmstudioBaseURL,
+    autocompleteProvider,
+    autocompleteEnabled,
+  ]);
 
   // Retarget the single editor to the active leaf: register its focus callback
   // and swap drafts so each leaf keeps its own unsent command. New or switched

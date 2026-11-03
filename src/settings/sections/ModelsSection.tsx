@@ -27,6 +27,9 @@ import { useChatStore } from "@/modules/ai/store/chatStore";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
   emitKeysChanged,
+  DEFAULT_PREFERENCES,
+  setAutocompleteModelId,
+  setAutocompleteProvider,
   setCustomEndpoints,
   setFavoriteModelIds,
   setLmstudioBaseURL,
@@ -163,6 +166,17 @@ export function ModelsSection() {
           ? compatModelIdForEndpoint(remaining[0].id)
           : DEFAULT_MODEL_ID,
       );
+    }
+
+    // The autocomplete picker stores the same synthetic id; a dangling one
+    // makes every completion request fail with an empty model.
+    const prefs = usePreferencesStore.getState();
+    if (
+      prefs.autocompleteProvider === "openai-compatible" &&
+      prefs.autocompleteModelId === deadModelId
+    ) {
+      await setAutocompleteProvider(DEFAULT_PREFERENCES.autocompleteProvider);
+      await setAutocompleteModelId(DEFAULT_PREFERENCES.autocompleteModelId);
     }
 
     await setCustomEndpoints(remaining);
