@@ -1,3 +1,4 @@
+import { formatArgs, parseEnv, splitArgs } from "@/modules/mcp/serverForm";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,39 +29,33 @@ export function EditMcpDialog({
   ) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState(config.name);
   const [command, setCommand] = useState(config.command);
-  const [argsStr, setArgsStr] = useState(config.args?.join(" ") || "");
+  const [argsStr, setArgsStr] = useState(formatArgs(config.args ?? []));
   const [envStr, setEnvStr] = useState(
     config.env ? JSON.stringify(config.env, null, 2) : "",
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    let env: Record<string, string> | undefined;
-    if (envStr.trim()) {
-      try {
-        env = JSON.parse(envStr.trim()) as Record<string, string>;
-      } catch {
-        env = {};
-        for (const line of envStr.split("\n")) {
-          const eq = line.indexOf("=");
-          if (eq > 0) {
-            env[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
-          }
-        }
-      }
+    if (!command.trim()) {
+      setError("Command cannot be empty.");
+      return;
     }
-    const args = argsStr
-      .trim()
-      .split(/\s+/)
-      .filter((s) => s.length > 0);
+    const parsedEnv = parseEnv(envStr);
+    if (!parsedEnv.ok) {
+      setError(parsedEnv.error);
+      return;
+    }
+    setError(null);
+    const args = splitArgs(argsStr);
 
     await onSave({
       name: name.trim(),
       command: command.trim(),
       args,
-      env,
+      env: parsedEnv.env,
     });
     setOpen(false);
   };
@@ -107,7 +102,9 @@ export function EditMcpDialog({
           </div>
 
           <div className="flex flex-col gap-1">
-            <Label className="text-[12px]">Arguments (space-separated)</Label>
+            <Label className="text-[12px]">
+              Arguments (quote values containing spaces)
+            </Label>
             <Input
               value={argsStr}
               onChange={(e) => setArgsStr(e.target.value)}
@@ -126,6 +123,12 @@ export function EditMcpDialog({
               className="h-8 text-[12px] font-mono"
             />
           </div>
+
+          {error ? (
+            <p role="alert" className="text-[12px] text-destructive">
+              {error}
+            </p>
+          ) : null}
 
           <DialogFooter className="mt-2">
             <Button
