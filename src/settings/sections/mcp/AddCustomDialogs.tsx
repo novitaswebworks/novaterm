@@ -9,6 +9,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  normalizeServerId,
+  parseEnv,
+  parseArgs,
+} from "@/modules/mcp/serverForm";
 import type { McpRegistrySource, McpServerConfig } from "@/modules/mcp/types";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -16,8 +21,10 @@ import { useState } from "react";
 
 export function AddCustomMcpDialog({
   onAdd,
+  existingIds,
 }: {
   onAdd: (config: McpServerConfig) => Promise<void>;
+  existingIds: readonly string[];
 }) {
   const [open, setOpen] = useState(false);
   const [id, setId] = useState("");
@@ -25,40 +32,38 @@ export function AddCustomMcpDialog({
   const [command, setCommand] = useState("");
   const [argsStr, setArgsStr] = useState("");
   const [envStr, setEnvStr] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id.trim() || !name.trim() || !command.trim()) return;
 
-    let env: Record<string, string> | undefined;
-    if (envStr.trim()) {
-      try {
-        env = JSON.parse(envStr.trim()) as Record<string, string>;
-      } catch {
-        env = {};
-        for (const line of envStr.split("\n")) {
-          const eq = line.indexOf("=");
-          if (eq > 0) {
-            env[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
-          }
-        }
-      }
+    const parsedEnv = parseEnv(envStr);
+    if (!parsedEnv.ok) {
+      setError(parsedEnv.error);
+      return;
     }
-
-    const args = argsStr
-      .trim()
-      .split(/\s+/)
-      .filter((s) => s.length > 0);
+    const normalizedId = normalizeServerId(id);
+    if (existingIds.includes(normalizedId)) {
+      setError(
+        `A server with the identifier "${normalizedId}" already exists.`,
+      );
+      return;
+    }
+    setError(null);
+    const parsedArgs = parseArgs(argsStr);
+    if (!parsedArgs.ok) {
+      setError(parsedArgs.error);
+      return;
+    }
+    const args = parsedArgs.args;
 
     await onAdd({
-      id: id
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9-_]/g, "-"),
+      id: normalizedId,
       name: name.trim(),
       command: command.trim(),
       args,
-      env,
+      env: parsedEnv.env,
       enabled: true,
     });
 
@@ -68,6 +73,7 @@ export function AddCustomMcpDialog({
     setCommand("");
     setArgsStr("");
     setEnvStr("");
+    setError(null);
   };
 
   return (
@@ -141,6 +147,12 @@ export function AddCustomMcpDialog({
               className="h-8 text-[12px] font-mono"
             />
           </div>
+
+          {error ? (
+            <p role="alert" className="text-[12px] text-destructive">
+              {error}
+            </p>
+          ) : null}
 
           <DialogFooter className="mt-2">
             <Button

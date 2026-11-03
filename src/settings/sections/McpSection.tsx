@@ -141,7 +141,10 @@ export function McpSection() {
                   <HugeiconsIcon icon={Download01Icon} className="size-3.5" />
                   Explore Catalog
                 </Button>
-                <AddCustomMcpDialog onAdd={addServer} />
+                <AddCustomMcpDialog
+                  onAdd={addServer}
+                  existingIds={Object.keys(servers)}
+                />
               </div>
             </div>
 

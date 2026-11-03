@@ -79,8 +79,12 @@ impl McpSession {
             .unwrap_or_else(|| std::path::PathBuf::from(command));
 
         let mut cmd = Command::new(&binary_path);
+        // Third-party code: start from an empty env so credentials held by the
+        // app process or the login shell do not leak; the server's own config
+        // is the only way to hand it secrets.
         cmd.args(args)
-            .envs(crate::modules::proc_env::server_env_overlay())
+            .env_clear()
+            .envs(crate::modules::proc_env::sanitized_child_env())
             .envs(extra_env)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -193,8 +197,7 @@ impl McpSession {
                     match line {
                         Ok(l) => {
                             let trimmed = l.trim();
-                            if !trimmed.is_empty()
-                                && on_message.send(trimmed.to_string()).is_err()
+                            if !trimmed.is_empty() && on_message.send(trimmed.to_string()).is_err()
                             {
                                 session_reader.kill();
                                 return;
@@ -227,7 +230,13 @@ impl McpSession {
                 while Instant::now() < deadline && !reader_thread.is_finished() {
                     thread::sleep(Duration::from_millis(10));
                 }
-                let tail = stderr_tail.lock().unwrap().iter().cloned().collect::<Vec<_>>().join("\n");
+                let tail = stderr_tail
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join("\n");
                 let _ = on_exit.send(McpExit {
                     code,
                     stderr_tail: tail,
