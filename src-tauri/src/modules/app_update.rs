@@ -15,6 +15,9 @@ use tauri::{AppHandle, State};
 pub struct FileSignature {
     len: u64,
     modified: Option<SystemTime>,
+    /// A replacement is a new file, so its creation time moves even when an
+    /// installer keeps the same size and modification time (common on Windows).
+    created: Option<SystemTime>,
     #[cfg(unix)]
     dev: u64,
     #[cfg(unix)]
@@ -34,6 +37,7 @@ pub fn signature(path: &Path) -> Option<FileSignature> {
     Some(FileSignature {
         len: meta.len(),
         modified: meta.modified().ok(),
+        created: meta.created().ok(),
         #[cfg(unix)]
         dev,
         #[cfg(unix)]
