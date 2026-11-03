@@ -9,7 +9,7 @@ import {
 import type { Tab } from "@/modules/tabs";
 import { leafHasForegroundProcess, leafIds } from "@/modules/terminal";
 
-async function anyTerminalBusy(tabs: Tab[]): Promise<boolean> {
+export async function anyTerminalBusy(tabs: Tab[]): Promise<boolean> {
   const leaves = tabs.flatMap((t) =>
     t.kind === "terminal" ? leafIds(t.paneTree) : [],
   );

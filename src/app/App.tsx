@@ -96,6 +96,7 @@ import {
 } from "./components/WorkspaceInputBar";
 import { WorkspaceSurface } from "./components/WorkspaceSurface";
 import { useAppCloseGuard } from "./hooks/useAppCloseGuard";
+import { useRestartOnUpdate } from "./hooks/useRestartOnUpdate";
 import { useTabCloseGuards } from "./hooks/useTabCloseGuards";
 import { useWorkspaceSwitcher } from "./hooks/useWorkspaceSwitcher";
 
@@ -356,6 +357,7 @@ export default function App() {
 
   const { pendingAppClose, confirmAppClose, cancelAppClose } =
     useAppCloseGuard(tabsRef);
+  useRestartOnUpdate(tabsRef);
 
   useEffect(() => {
     const live = new Set<number>();
