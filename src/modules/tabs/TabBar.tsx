@@ -24,9 +24,7 @@ import { resolveDisplayName } from "@/modules/editor/lib/languageResolver";
 import { fileIconUrl } from "@/modules/explorer/lib/iconResolver";
 import {
   Cancel01Icon,
-  Clock01Icon,
   ComputerTerminal02Icon,
-  GitBranchIcon,
   GitCompareIcon,
   Globe02Icon,
   IncognitoIcon,
@@ -55,7 +53,6 @@ type Props = {
   onNewPrivate: () => void;
   onNewPreview: () => void;
   onNewEditor: () => void;
-  onNewGitGraph: () => void;
   onClose: (id: number) => void;
   /** Pin (promote) a preview tab to persistent on double-click. */
   onPin: (id: number) => void;
@@ -76,7 +73,6 @@ export function TabBar({
   onNewPrivate,
   onNewPreview,
   onNewEditor,
-  onNewGitGraph,
   onClose,
   onPin,
   onRename,
@@ -595,14 +591,6 @@ export function TabBar({
                 {fmtShortcut(MOD_KEY, "P")}
               </span>
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onNewGitGraph()}>
-              <HugeiconsIcon
-                icon={GitBranchIcon}
-                size={14}
-                strokeWidth={1.75}
-              />
-              <span className="flex-1">Git Graph</span>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -669,20 +657,10 @@ export function TabIcon({ tab }: { tab: Tab }) {
       />
     );
   }
-  if (tab.kind === "git-diff" || tab.kind === "git-commit-file") {
+  if (tab.kind === "git-diff") {
     return (
       <HugeiconsIcon
         icon={GitCompareIcon}
-        size={14}
-        strokeWidth={2}
-        className="shrink-0"
-      />
-    );
-  }
-  if (tab.kind === "git-history") {
-    return (
-      <HugeiconsIcon
-        icon={Clock01Icon}
         size={14}
         strokeWidth={2}
         className="shrink-0"

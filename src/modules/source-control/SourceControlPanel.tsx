@@ -53,14 +53,12 @@ import {
   AiContentGenerator02Icon,
   Alert02Icon,
   ArrowDown01Icon,
-  ArrowRight01Icon,
   ArrowUp01Icon,
   CheckmarkCircle01Icon,
   Download01Icon,
   Folder01Icon,
   FolderCloudIcon,
   FolderGitTwoIcon,
-  GitBranchIcon,
   Refresh01Icon,
   RemoveSquareIcon,
   Tick02Icon,
@@ -87,7 +85,6 @@ import {
 type Props = {
   open: boolean;
   sourceControl: SourceControlSummary;
-  onOpenGitGraph?: () => void;
   onOpenDiff: (input: {
     path: string;
     repoRoot: string;
@@ -345,7 +342,6 @@ function BranchDropdown({
 export const SourceControlPanel = memo(function SourceControlPanel({
   open,
   sourceControl,
-  onOpenGitGraph,
   onOpenDiff,
   onOpenFile,
   onNavigateToPath,
@@ -718,27 +714,6 @@ export const SourceControlPanel = memo(function SourceControlPanel({
           </div>
         </header>
 
-        {onOpenGitGraph ? (
-          <button
-            type="button"
-            onClick={() => onOpenGitGraph()}
-            className="group flex shrink-0 cursor-pointer items-center gap-2 border-b border-border/40 px-3 py-2 text-left text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
-          >
-            <HugeiconsIcon
-              icon={GitBranchIcon}
-              size={13}
-              strokeWidth={1.85}
-              className="shrink-0"
-            />
-            <span className="flex-1 text-[12px] font-medium">Commit Graph</span>
-            <HugeiconsIcon
-              icon={ArrowRight01Icon}
-              size={12}
-              strokeWidth={2}
-              className="shrink-0 opacity-50 transition-transform group-hover:translate-x-0.5"
-            />
-          </button>
-        ) : null}
 
         {scm.panelState === "loading" ? (
           <PanelCenter title="Loading repository" />

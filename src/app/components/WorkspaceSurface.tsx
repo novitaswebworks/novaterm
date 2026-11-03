@@ -1,7 +1,6 @@
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 import { AiDiffStack, EditorStack, GitDiffStack } from "@/modules/editor";
-import { GitHistoryStack } from "@/modules/git-history";
 import { MarkdownStack } from "@/modules/markdown";
 import { PreviewStack } from "@/modules/preview";
 import type { Tab } from "@/modules/tabs";
@@ -11,7 +10,6 @@ type TerminalStackProps = ComponentProps<typeof TerminalStack>;
 type EditorStackProps = ComponentProps<typeof EditorStack>;
 type PreviewStackProps = ComponentProps<typeof PreviewStack>;
 type AiDiffStackProps = ComponentProps<typeof AiDiffStack>;
-type GitHistoryStackProps = ComponentProps<typeof GitHistoryStack>;
 
 type Props = {
   tabs: Tab[];
@@ -29,8 +27,6 @@ type Props = {
   onPreviewUrlChange: PreviewStackProps["onUrlChange"];
   onAiDiffAccept: AiDiffStackProps["onAccept"];
   onAiDiffReject: AiDiffStackProps["onReject"];
-  onOpenCommitFile: GitHistoryStackProps["onOpenCommitFile"];
-  onGitHistorySearchHandle: GitHistoryStackProps["onSearchHandle"];
   onSetMarkdownView: EditorStackProps["onSetMarkdownView"];
 };
 
@@ -55,8 +51,6 @@ export function WorkspaceSurface({
   onPreviewUrlChange,
   onAiDiffAccept,
   onAiDiffReject,
-  onOpenCommitFile,
-  onGitHistorySearchHandle,
   onSetMarkdownView,
 }: Props) {
   const kind = activeTab?.kind;
@@ -65,8 +59,7 @@ export function WorkspaceSurface({
   const isPreviewTab = kind === "preview";
   const isMarkdownTab = kind === "markdown";
   const isAiDiffTab = kind === "ai-diff";
-  const isGitDiffTab = kind === "git-diff" || kind === "git-commit-file";
-  const isGitHistoryTab = kind === "git-history";
+  const isGitDiffTab = kind === "git-diff";
 
   return (
     <div className="relative h-full min-h-0">
@@ -152,20 +145,6 @@ export function WorkspaceSurface({
         aria-hidden={!isGitDiffTab}
       >
         <GitDiffStack tabs={tabs} activeId={activeId} />
-      </div>
-      <div
-        className={cn(
-          "absolute inset-0",
-          !isGitHistoryTab && "invisible pointer-events-none",
-        )}
-        aria-hidden={!isGitHistoryTab}
-      >
-        <GitHistoryStack
-          tabs={tabs}
-          activeId={activeId}
-          onOpenCommitFile={onOpenCommitFile}
-          onSearchHandle={onGitHistorySearchHandle}
-        />
       </div>
     </div>
   );

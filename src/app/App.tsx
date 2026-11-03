@@ -33,7 +33,6 @@ import {
   useEditorFileSync,
 } from "@/modules/editor";
 import { FileExplorer, type FileExplorerHandle } from "@/modules/explorer";
-import type { GitHistorySearchHandle } from "@/modules/git-history";
 import {
   Header,
   type SearchInlineHandle,
@@ -128,8 +127,6 @@ export default function App() {
     openAiDiffTab,
     closeAiDiffTab,
     openGitDiffTab,
-    openCommitHistoryTab,
-    openCommitFileDiffTab,
     closeTab,
     updateTab,
     selectByIndex,
@@ -162,8 +159,6 @@ export default function App() {
   const previewRefs = useRef<Map<number, PreviewPaneHandle>>(new Map());
   const [activeEditorHandle, setActiveEditorHandle] =
     useState<EditorPaneHandle | null>(null);
-  const [gitHistoryHandle, setGitHistoryHandle] =
-    useState<GitHistorySearchHandle | null>(null);
   const { zoomIn, zoomOut, zoomReset } = useZoom();
   useTerminalFileDrop();
   const explorerRef = useRef<FileExplorerHandle>(null);
@@ -303,7 +298,6 @@ export default function App() {
   const isBlockTab =
     activeTerminalTab != null && activeTerminalTab.blocks !== false;
   const isEditorTab = activeTab?.kind === "editor";
-  const isGitHistoryTab = activeTab?.kind === "git-history";
 
   useEditorFileSync({ tabs, tabsRef, editorRefs });
   useThemeFileEditing({ tabsRef, openFileTab });
@@ -604,18 +598,13 @@ export default function App() {
       const rel = activeTab.path.replace(/^[\\/]+/, "");
       return `${root}/${rel}`;
     }
-    if (activeTab?.kind === "git-commit-file") {
-      const root = activeTab.repoRoot.replace(/[\\/]+$/, "");
-      const rel = activeTab.path.replace(/^[\\/]+/, "");
-      return `${root}/${rel}`;
-    }
     return null;
   })();
   const explorerActiveFilePath =
     activeTab?.kind === "editor" || activeTab?.kind === "markdown"
       ? activeTab.path
       : null;
-  const { sourceControl, toggleSourceControl, openGitGraphFromContext } =
+  const { sourceControl, toggleSourceControl } =
     useSourceControlContext({
       activeTab,
       tabs,
@@ -626,7 +615,6 @@ export default function App() {
       home,
       sidebarView,
       cycleSidebarView,
-      openCommitHistoryTab,
     });
   const explorerGitDecorations = usePreferencesStore(
     (s) => s.explorerGitDecorations,
@@ -911,21 +899,13 @@ export default function App() {
         handle: activeEditorHandle,
         focus: () => activeEditorHandle.focus(),
       };
-    if (isGitHistoryTab && gitHistoryHandle)
-      return {
-        kind: "git-history",
-        handle: gitHistoryHandle,
-        focus: () => {},
-      };
     return null;
   }, [
     isTerminalTab,
     isEditorTab,
-    isGitHistoryTab,
     activeLeafId,
     activeSearchAddon,
     activeEditorHandle,
-    gitHistoryHandle,
   ]);
 
   const activeCwd = activeTerminalLeafCwd;
@@ -1025,7 +1005,6 @@ export default function App() {
             openNewPrivate: openNewPrivateTab,
             openNewEditor: () => setNewEditorOpen(true),
             openNewPreview: () => openPreviewTab(""),
-            openGitGraph: openGitGraphFromContext,
             toggleSourceControl,
             closeActiveTabOrPane: handleCloseTabOrPane,
             splitPaneRight: () => splitActivePaneInActiveTab("row"),
@@ -1055,7 +1034,6 @@ export default function App() {
       openNewBlockTab, 
       openNewPrivateTab, 
       openPreviewTab, 
-      openGitGraphFromContext, 
       toggleSourceControl, 
       handleCloseTabOrPane, 
       splitActivePaneInActiveTab, 
@@ -1121,7 +1099,6 @@ export default function App() {
               onNewPrivate={openNewPrivateTab}
               onNewPreview={() => openPreviewTab("")}
               onNewEditor={() => setNewEditorOpen(true)}
-              onNewGitGraph={openGitGraphFromContext}
               onClose={handleClose}
               onPin={pinTab}
               onRename={handleRenameTab}
@@ -1185,7 +1162,6 @@ export default function App() {
                         open
                         sourceControl={sourceControl}
                         onOpenDiff={openGitDiffTab}
-                        onOpenGitGraph={openGitGraphFromContext}
                         onOpenFile={handleOpenFile}
                         onNavigateToPath={cdInNewTab}
                       />
@@ -1218,8 +1194,6 @@ export default function App() {
                       onPreviewUrlChange={handlePreviewUrl}
                       onAiDiffAccept={(id) => respondToApproval(id, true)}
                       onAiDiffReject={(id) => respondToApproval(id, false)}
-                      onOpenCommitFile={openCommitFileDiffTab}
-                      onGitHistorySearchHandle={setGitHistoryHandle}
                       onSetMarkdownView={setMarkdownView}
                     />
                   </div>
