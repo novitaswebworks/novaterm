@@ -1,6 +1,5 @@
 import { endpointIdFromCompatModel } from "@/modules/ai/config";
 import { getCustomEndpointKey, getKey } from "@/modules/ai/lib/keyring";
-import { lspFormatDocument, useLspExtension } from "@/modules/lsp";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { onKeysChanged } from "@/modules/settings/store";
 import { redo, undo } from "@codemirror/commands";
@@ -22,7 +21,6 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
-  useState,
 } from "react";
 import { inlineCompletion } from "./lib/autocomplete/inlineExtension";
 import { diagnosticsReporter } from "./lib/diagnosticsReporter";
@@ -30,7 +28,6 @@ import { useDiagnosticsStore } from "./lib/diagnosticsStore";
 import {
   buildSharedExtensions,
   languageCompartment,
-  lspCompartment,
   vimCompartment,
   wrapCompartment,
 } from "./lib/extensions";
@@ -87,7 +84,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const vimMode = usePreferencesStore((s) => s.vimMode);
     const editorWordWrap = usePreferencesStore((s) => s.editorWordWrap);
     const languageRef = useRef<string | null>(null);
-    const [langId, setLangId] = useState<string | null>(null);
     const apiKeyRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -141,17 +137,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     onSavedRef.current = onSaved;
     const onCloseRef = useRef(onClose);
     onCloseRef.current = onClose;
-    const lspActiveRef = useRef(false);
 
     const performSave = useCallback(async () => {
-      const view = cmRef.current?.view;
-      if (
-        view &&
-        lspActiveRef.current &&
-        usePreferencesStore.getState().editorFormatOnSave
-      ) {
-        await lspFormatDocument(view).catch(() => {});
-      }
       await saveRef.current();
       onSavedRef.current?.();
     }, []);
@@ -203,7 +190,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         })),
         ...buildSharedExtensions(),
         languageCompartment.of([]),
-        lspCompartment.of([]),
         diagnosticsReporter(() => pathRef.current),
         inlineCompletion({
           getPrefs: () => {
@@ -276,16 +262,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       });
     }, [editorWordWrap]);
 
-    const lspExt = useLspExtension(path, langId, doc.status === "ready");
-    useEffect(() => {
-      lspActiveRef.current = lspExt !== null;
-      const view = cmRef.current?.view;
-      if (!view) return;
-      view.dispatch({
-        effects: lspCompartment.reconfigure(lspExt ?? []),
-      });
-    }, [lspExt]);
-
     useEffect(
       () => () => useDiagnosticsStore.getState().report(pathRef.current, null),
       [],
@@ -308,7 +284,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       void resolve().then((result) => {
         if (cancelled) return;
         if (result.id) languageRef.current = result.id;
-        setLangId(result.id || ext);
         const view = cmRef.current?.view;
         if (!view) return;
         view.dispatch({

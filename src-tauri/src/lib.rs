@@ -1,6 +1,6 @@
 pub mod modules;
 
-use modules::{agent, fs, git, history, lsp, mcp, net, pty, remote, secrets, shell, workspace};
+use modules::{agent, fs, git, history, mcp, net, pty, remote, secrets, shell, workspace};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 #[cfg(target_os = "macos")]
@@ -221,7 +221,6 @@ pub fn run() {
         .manage(secrets::SecretsState::default())
         .manage(fs::watch::FsWatchState::default())
         .manage(history::HistoryState::default())
-        .manage(lsp::LspState::default())
         .manage(mcp::McpState::default())
         .manage(fs::grep::ContentSearchState::default())
         .manage({
@@ -257,12 +256,6 @@ pub fn run() {
             fs::mutate::fs_copy,
             fs::watch::fs_watch_add,
             fs::watch::fs_watch_remove,
-            lsp::lsp_detect,
-            lsp::lsp_host_pid,
-            lsp::lsp_resolve_root,
-            lsp::lsp_spawn,
-            lsp::lsp_send,
-            lsp::lsp_kill,
             fs::search::fs_search,
             fs::search::fs_list_files,
             fs::grep::fs_grep,
@@ -334,12 +327,8 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
-            // Servers exit on stdin EOF, but destructors are not guaranteed
-            // on process exit; kill explicitly.
+            // Destructors are not guaranteed on process exit; kill explicitly.
             if let tauri::RunEvent::Exit = event {
-                if let Some(state) = app.try_state::<lsp::LspState>() {
-                    state.kill_all();
-                }
                 if let Some(state) = app.try_state::<mcp::McpState>() {
                     state.kill_all();
                 }

@@ -38,7 +38,6 @@ import {
   type SearchInlineHandle,
   type SearchTarget,
 } from "@/modules/header";
-import { setLspNavigator } from "@/modules/lsp";
 import { PortForwardingDrawer } from "@/modules/ports";
 import type { PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
@@ -1056,11 +1055,6 @@ export default function App() {
     },
     [openFileTab],
   );
-
-  useEffect(() => {
-    setLspNavigator({ openFile: openContentHit });
-    return () => setLspNavigator(null);
-  }, [openContentHit]);
 
   const insertHistoryCommand = useMemo(
     () =>
