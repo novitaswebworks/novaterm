@@ -18,6 +18,7 @@ import { SectionHeader } from "../components/SectionHeader";
 
 const REPO_URL = "https://github.com/novitaswebworks/novaterm";
 const WEBSITE = "https://novaterm.novitasweb.works";
+const DEVELOPER_URL = "https://novitasweb.works";
 
 const PLATFORM_LABEL: Record<string, string> = {
   macos: "macOS",
@@ -229,6 +230,16 @@ export function AboutSection() {
           >
             <HugeiconsIcon icon={Globe02Icon} size={12} strokeWidth={1.75} />
             novaterm.novitasweb.works
+          </button>
+        </dd>
+        <dt className="text-muted-foreground">Developed by</dt>
+        <dd>
+          <button
+            type="button"
+            onClick={() => void openUrl(DEVELOPER_URL)}
+            className="rounded-md text-[12px] underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Novitas WebWorks
           </button>
         </dd>
       </dl>

@@ -9,7 +9,7 @@
   </p>
 
   <p>
-    Built by <strong>Novitas WebWorks</strong>
+    Developed by <a href="https://novitasweb.works"><strong>Novitas WebWorks</strong></a>
   </p>
 </div>
 
