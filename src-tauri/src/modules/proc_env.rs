@@ -9,6 +9,8 @@ use std::sync::OnceLock;
 #[cfg(unix)]
 const CAPTURE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 
+/// Only toolchain-location variables from the login shell, never credentials:
+/// the overlay is handed to MCP servers and other third-party processes.
 /// Empty on Windows (full user env is inherited there) or if capture failed.
 pub fn server_env_overlay() -> &'static HashMap<String, String> {
     static ENV: OnceLock<HashMap<String, String>> = OnceLock::new();
@@ -16,7 +18,7 @@ pub fn server_env_overlay() -> &'static HashMap<String, String> {
         #[cfg(unix)]
         {
             match capture_login_env() {
-                Some(env) => env,
+                Some(env) => filter_overlay(env),
                 None => {
                     log::warn!("proc_env: login shell env capture failed, using process env");
                     HashMap::new()
@@ -41,6 +43,74 @@ pub fn resolve_binary(command: &str) -> Option<PathBuf> {
         .cloned()
         .or_else(|| std::env::var("PATH").ok());
     which::which_in(command, path, cwd).ok()
+}
+
+#[cfg(unix)]
+const OVERLAY_EXACT: &[&str] = &[
+    "PATH",
+    "SHELL",
+    "USER",
+    "LOGNAME",
+    "LANG",
+    "TMPDIR",
+    "CARGO_HOME",
+    "RUSTUP_HOME",
+    "GOPATH",
+    "GOROOT",
+    "GOBIN",
+    "JAVA_HOME",
+    "ANDROID_HOME",
+    "ANDROID_SDK_ROOT",
+    "GEM_HOME",
+    "GEM_PATH",
+    "BUN_INSTALL",
+    "PNPM_HOME",
+    "DENO_INSTALL",
+    "PYENV_ROOT",
+    "RBENV_ROOT",
+    "SDKMAN_DIR",
+];
+
+#[cfg(unix)]
+const OVERLAY_PREFIXES: &[&str] = &[
+    "LC_",
+    "XDG_",
+    "NVM_",
+    "FNM_",
+    "VOLTA_",
+    "ASDF_",
+    "MISE_",
+    "DOCKER_",
+    "HOMEBREW_",
+];
+
+#[cfg(unix)]
+const SECRET_MARKERS: &[&str] = &[
+    "TOKEN",
+    "SECRET",
+    "PASSWORD",
+    "PASSWD",
+    "KEY",
+    "CREDENTIAL",
+    "AUTH",
+    "COOKIE",
+    "SESSION",
+];
+
+#[cfg(unix)]
+fn is_safe_overlay_var(name: &str) -> bool {
+    let upper = name.to_ascii_uppercase();
+    if SECRET_MARKERS.iter().any(|m| upper.contains(m)) {
+        return false;
+    }
+    OVERLAY_EXACT.contains(&name) || OVERLAY_PREFIXES.iter().any(|p| name.starts_with(p))
+}
+
+#[cfg(unix)]
+fn filter_overlay(env: HashMap<String, String>) -> HashMap<String, String> {
+    env.into_iter()
+        .filter(|(k, _)| is_safe_overlay_var(k))
+        .collect()
 }
 
 #[cfg(unix)]
@@ -109,6 +179,28 @@ mod tests {
     fn resolve_binary_finds_sh() {
         let p = resolve_binary("sh").expect("sh must resolve");
         assert!(p.is_absolute());
+    }
+
+    #[test]
+    fn overlay_keeps_toolchain_vars_and_drops_credentials() {
+        let env: HashMap<String, String> = [
+            ("PATH", "/usr/bin"),
+            ("NVM_DIR", "/home/u/.nvm"),
+            ("LC_ALL", "C"),
+            ("DOCKER_HOST", "unix:///sock"),
+            ("GITHUB_TOKEN", "ghp_x"),
+            ("AWS_SECRET_ACCESS_KEY", "x"),
+            ("OPENAI_API_KEY", "x"),
+            ("DOCKER_AUTH_CONFIG", "{}"),
+            ("HOMEBREW_GITHUB_API_TOKEN", "x"),
+            ("DATABASE_URL", "postgres://u:p@h/db"),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
+        let mut kept: Vec<String> = filter_overlay(env).into_keys().collect();
+        kept.sort();
+        assert_eq!(kept, ["DOCKER_HOST", "LC_ALL", "NVM_DIR", "PATH"]);
     }
 
     #[test]
